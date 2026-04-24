@@ -93,7 +93,7 @@
   "logo": "/logos/HF-logo-blue-face.png",
   "background": {
     "color": {
-      "light": "#b3eff4"
+      "light": "#f6f9f9"
     },
     "decoration": "grid"
   }
