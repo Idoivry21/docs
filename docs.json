@@ -81,7 +81,7 @@
     "primary": {
       "type": "button",
       "label": "Sign in",
-      "href": "https://app.hearflow.io"
+      "href": "https://hearflow.io/login"
     }
   },
   "contextual": {
