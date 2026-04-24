@@ -1,0 +1,204 @@
+---
+title: "Product Insights Guide"
+description: "Learn how to use the Product Insights dashboard to discover patterns in customer conversations and transform them into actionable product feedback."
+icon: "lightbulb"
+---
+
+Discover patterns in customer conversations and transform them into actionable product feedback.
+
+## Overview
+
+The Product Insights dashboard surfaces recurring insights from customer calls, automatically extracted and grouped by AI. Each insight represents a pattern that appears across multiple conversations, backed by verbatim customer quotes as evidence.
+
+<Info>
+  **Key Principle** — Every insight is defensible with real customer language. Accuracy is prioritized over coverage — it's better to miss an insight than hallucinate one.
+</Info>
+
+<CardGroup cols={3}>
+  <Card title="Evidence-Based" icon="quote-left">
+    Every insight backed by verbatim customer quotes.
+  </Card>
+  <Card title="Auto-Grouped" icon="layer-group">
+    Similar ideas clustered together automatically.
+  </Card>
+  <Card title="Frequency Tracked" icon="chart-line">
+    See how often each pattern appears across calls.
+  </Card>
+</CardGroup>
+
+## Understanding Insights
+
+### What is an Insight?
+
+An **Insight** represents a recurring idea that appears across customer conversations. Each insight answers: *"What keeps coming up in customer conversations?"*
+
+| Field | Description |
+| --- | --- |
+| Title | A clear, stable summary of the recurring idea |
+| Category | The type of signal (see Categories below) |
+| Product Area | Optional organizational grouping (user-controlled) |
+| Frequency | How many calls mentioned this insight |
+| Last Updated | When the insight was last mentioned |
+| Evidence | Verbatim quotes from source calls |
+
+### How Insights Are Created
+
+<Steps>
+  <Step title="Call Processing">
+    When a call transcript is processed, the AI extracts potential insights.
+  </Step>
+  <Step title="Deduplication">
+    Similar ideas are automatically grouped together using semantic similarity.
+  </Step>
+  <Step title="Evidence Linking">
+    Each mention links the insight to the source call with a verbatim quote.
+  </Step>
+  <Step title="Frequency Tracking">
+    As more calls mention the same idea, the insight's frequency increases.
+  </Step>
+</Steps>
+
+Insights are durable. As more calls come in, insights strengthen — they don't fragment into duplicates.
+
+## Categories
+
+Categories classify the **type of feedback**, not where it belongs in your product. They answer: *"What kind of signal is this?"*
+
+- **Bug** — Something is broken, not working as expected, or producing errors.
+- **Feature Request** — Customer explicitly wants new functionality that doesn't exist.
+- **Deal Risk** — RARE: Explicit renewal uncertainty, competitive switch, or leadership intervention.
+- **Pricing Feedback** — Specific comments about cost, value, or pricing structure.
+- **Usability Issue** — A feature exists but is hard to use, configure, or understand.
+- **Workflow Gap** — A step, process, or integration is missing entirely.
+- **Pain Point** — General frustration when no other category clearly applies.
+
+<Warning>
+  **Deal Risk Guidelines** — Only categorized as **Deal Risk** when customers explicitly mention:
+
+  - Renewal uncertainty: *"we're reviewing whether to renew"*
+  - Competitive switch: *"we're evaluating alternatives"*
+  - Leadership intervention: *"our CFO is doing a cost review"*
+
+  General complaints or frustrations do **not** qualify as Deal Risk.
+</Warning>
+
+## Dashboard Features
+
+### View Modes
+
+Switch between two display modes:
+
+- **Table View** (default): Compact list with sortable columns
+- **Grid View**: Card-based layout for visual scanning
+
+### Filtering & Search
+
+| Filter | Description |
+| --- | --- |
+| Search | Full-text search across title, description, and category |
+| Category Filter | Click category chips to show only matching insights |
+| Product Area | Filter by product area (if configured) |
+| Sort By | Order by Frequency or Last Updated |
+| Sort Order | Ascending or descending |
+
+Combine filters to narrow down results. Click "Clear filters" to reset.
+
+### Exporting Data
+
+Click the **Export** button to download insights as CSV. The export includes:
+
+- Insight title and description
+- Category and product area
+- Frequency count
+- First and last seen dates
+- All linked evidence (quotes and sources)
+
+## Insight Details Panel
+
+Click any insight to open the detail panel with three tabs:
+
+### Evidence Tab
+
+View all verbatim quotes supporting this insight:
+
+- **Quote**: The exact customer language (never edited or paraphrased)
+- **Speaker**: Who said it (when available)
+- **Sentiment**: Positive, neutral, or negative tone
+- **Confidence Score**: AI certainty (percentage)
+- **Source Call**: Link to the original conversation
+
+### Related Tab
+
+Discover connections:
+
+- **Timeline**: When the insight was first and last seen
+- **Related Insights**: Similar insights based on semantic similarity (shown with match percentage)
+
+### Impact Tab
+
+Understand business context:
+
+- **Affected Accounts**: Which CRM accounts mentioned this insight
+- **ARR Impact**: Total annual revenue from affected accounts
+- **Sentiment by Account**: Whether each account's mentions were positive, negative, or neutral
+
+## Product Areas
+
+Product Areas represent how **you** organize your product, not how the AI categorizes feedback. They're optional and fully user-controlled.
+
+| | |
+| --- | --- |
+| Source | Defined by users in Settings only |
+| Assignment | Optional for each insight |
+| AI Behavior | Never auto-creates new product areas |
+| User Control | Can be assigned, changed, or removed at any time |
+
+**Examples**: Billing, Onboarding, Reporting, API, Integrations. To configure product areas, go to [Settings → Product Areas](https://app.hearflow.io/settings).
+
+## Best Practices
+
+<Check>
+  **Review High-Frequency Insights First** — Insights with higher frequency represent patterns mentioned across many calls. These often indicate widespread customer pain, commonly requested features, or critical usability issues.
+</Check>
+
+<Info>
+  **Track Insight Evolution** — Use the timeline feature to understand how long an issue has persisted, whether mentions are increasing or decreasing, and when patterns first emerged.
+</Info>
+
+<Info>
+  **Cross-Reference with ARR Impact** — The Impact tab helps prioritize: High-ARR accounts with negative sentiment = urgent. Multiple enterprise accounts mentioning the same issue = strategic importance.
+</Info>
+
+<Info>
+  **Use Product Areas for Organization** — As insights accumulate, product areas help with team ownership and routing, sprint planning focus, and stakeholder reporting.
+</Info>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Insights Appearing">
+    1. Verify integrations are connected in [Settings → Integrations](https://app.hearflow.io/settings/integrations)
+    2. Check that calls have been processed in [Dashboard → Processing](https://app.hearflow.io/dashboard)
+    3. Ensure calls contain product feedback (general chat won't generate insights)
+  </Accordion>
+  <Accordion title="Duplicate Insights">
+    If you see apparent duplicates:
+
+    1. They may have different categories (intentional separation)
+    2. Post-processing deduplication runs asynchronously — wait a few minutes
+    3. Report persistent duplicates to the product team for threshold tuning
+  </Accordion>
+  <Accordion title="Missing Evidence">
+    Evidence is only created when:
+
+    1. A verbatim quote is extractable from the transcript
+    2. The quote meets quality thresholds
+    3. Citation can be validated against source
+
+    If an insight has fewer quotes than expected, the AI may not have found clear, extractable evidence in some calls.
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Ready to get started?" icon="sparkles" href="https://app.hearflow.io/settings/integrations" horizontal>
+  Connect your first data source and start discovering insights from customer conversations.
+</Card>

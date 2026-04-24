@@ -1,0 +1,3572 @@
+openapi: 3.0.3
+info:
+  title: Hearflow Public API
+  version: 1.0.0
+  description: |-
+    Public programmatic API for Hearflow integrations.
+
+    This published contract covers the external surface:
+    - OAuth 2.1 authorization server endpoints for MCP and third-party clients
+    - Connect API endpoints for PII-free insight access
+    - Insights API for authenticated read/mutation access
+    - Product areas for taxonomy management
+    - Company context for configuring AI extraction
+
+    Internal web-app, onboarding, operational, billing, team, and provider setup
+    routes are not part of the public API contract. A broader unpublished
+    reference snapshot is kept in openapi.internal.yaml.
+  contact:
+    name: Hearflow Support
+    url: https://hearflow.io/support
+    email: support@hearflow.io
+  license:
+    name: Proprietary
+servers:
+  - url: https://hearflow.io/api
+    description: Production
+tags:
+  - name: OAuth
+    description: OAuth 2.1 authorization server endpoints for MCP and third-party
+      integrations
+  - name: Connector API
+    description: >-
+      Programmatic REST API for accessing Hearflow insights. Designed for MCP
+      wrappers, CLI tools,
+
+      and third-party connector integrations. Uses page/per_page pagination. All
+      responses are PII-free.
+
+      Authenticate with API key (Bearer hf_live_*) or session cookie.
+  - name: Insights
+    description: >-
+      Authenticated REST API for full-fidelity insight access: list, read,
+      filter, search,
+
+      merge/unmerge, bulk operations, export, related/accounts/timeline lookups,
+      and natural-language ask.
+
+      Authenticate with API key (Bearer hf_live_*) or session cookie.
+  - name: Product Areas
+    description: User-controlled taxonomy for categorizing insights. Product areas
+      are never auto-created.
+  - name: Settings
+    description: >-
+      Company context configuration that drives AI extraction: industry, product
+      offering,
+
+      business goals, pain points, and competitors. Context versions are
+      immutable; saving
+
+      creates a new active version.
+paths:
+  /v1/oauth/.well-known/oauth-authorization-server:
+    get:
+      tags:
+        - OAuth
+      operationId: oauthServerMetadata
+      summary: OAuth 2.0 Authorization Server Metadata (RFC 8414)
+      description: >
+        Returns the OAuth 2.0 authorization server metadata document.
+
+        Used by MCP clients and OAuth tools to discover Hearflow OAuth
+        endpoints.
+
+
+        **Public endpoint** — no authentication required.
+
+        Cached for 1 hour (`Cache-Control: public, max-age=3600`).
+      security: []
+      responses:
+        "200":
+          description: Authorization server metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  issuer:
+                    type: string
+                    format: uri
+                  authorization_endpoint:
+                    type: string
+                    format: uri
+                  token_endpoint:
+                    type: string
+                    format: uri
+                  registration_endpoint:
+                    type: string
+                    format: uri
+                  revocation_endpoint:
+                    type: string
+                    format: uri
+                  response_types_supported:
+                    type: array
+                    items:
+                      type: string
+                  grant_types_supported:
+                    type: array
+                    items:
+                      type: string
+                  code_challenge_methods_supported:
+                    type: array
+                    items:
+                      type: string
+                  scopes_supported:
+                    type: array
+                    items:
+                      type: string
+                  token_endpoint_auth_methods_supported:
+                    type: array
+                    items:
+                      type: string
+        "500":
+          description: NEXT_PUBLIC_APP_URL not configured
+  /v1/oauth/authorize:
+    get:
+      tags:
+        - OAuth
+      operationId: oauthAuthorize
+      summary: OAuth Authorization endpoint (RFC 6749)
+      description: >
+        Initiates the OAuth 2.1 authorization code flow. Requires an active
+        Hearflow
+
+        session. Validates client and redirect_uri, then redirects to the
+        consent page.
+
+
+        If the user is not authenticated, redirects to `/login` with a return
+        URL.
+
+
+        **PKCE required** — `code_challenge` and `code_challenge_method=S256`
+        are mandatory.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - code
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+        - name: scope
+          in: query
+          schema:
+            type: string
+            default: read
+        - name: state
+          in: query
+          schema:
+            type: string
+        - name: code_challenge
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 43
+        - name: code_challenge_method
+          in: query
+          schema:
+            type: string
+            enum:
+              - S256
+            default: S256
+        - name: resource
+          in: query
+          schema:
+            type: string
+            format: uri
+      responses:
+        "302":
+          description: Redirects to consent page or login
+        "400":
+          description: Invalid request parameters
+    post:
+      tags:
+        - OAuth
+      operationId: oauthAuthorizeConsent
+      summary: OAuth Consent form submission
+      description: >
+        Handles the consent form POST (approve/deny). Validates origin, CSRF,
+
+        and the user's session, then either issues an authorization code
+        redirect
+
+        or denies the request.
+
+
+        Accepts `application/x-www-form-urlencoded` form data.
+
+
+        **Security:**
+
+        - Requires active Hearflow session
+
+        - Origin validation
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - action
+                - client_id
+                - redirect_uri
+                - code_challenge
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - approve
+                    - deny
+                client_id:
+                  type: string
+                redirect_uri:
+                  type: string
+                  format: uri
+                code_challenge:
+                  type: string
+                code_challenge_method:
+                  type: string
+                  enum:
+                    - S256
+                scope:
+                  type: string
+                state:
+                  type: string
+      responses:
+        "302":
+          description: Redirects with authorization code or error
+        "400":
+          description: Invalid form data
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+  /v1/oauth/register:
+    post:
+      tags:
+        - OAuth
+      operationId: oauthRegister
+      summary: Dynamic Client Registration (RFC 7591)
+      description: |
+        Public endpoint for OAuth clients (e.g., Claude MCP) to self-register.
+        Rate limited by IP (per-minute + 10 per day).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - redirect_uris
+              properties:
+                client_name:
+                  type: string
+                  maxLength: 200
+                redirect_uris:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  minItems: 1
+                  description: Must be HTTPS or localhost
+                grant_types:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - authorization_code
+                      - refresh_token
+                response_types:
+                  type: array
+                  items:
+                    type: string
+                scope:
+                  type: string
+                  default: read
+                logo_uri:
+                  type: string
+                  format: uri
+                client_uri:
+                  type: string
+                  format: uri
+      responses:
+        "201":
+          description: Client registered (RFC 7591 format)
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  client_id:
+                    type: string
+                  client_secret:
+                    type: string
+                  client_name:
+                    type: string
+                  redirect_uris:
+                    type: array
+                    items:
+                      type: string
+                  grant_types:
+                    type: array
+                    items:
+                      type: string
+                  response_types:
+                    type: array
+                    items:
+                      type: string
+                  scope:
+                    type: string
+        "400":
+          description: Invalid request
+        "429":
+          description: Rate limit exceeded
+  /v1/oauth/token:
+    post:
+      tags:
+        - OAuth
+      operationId: oauthToken
+      summary: OAuth Token endpoint (RFC 6749)
+      description: |
+        Exchanges authorization codes or refresh tokens for access tokens.
+        Authenticated via `client_id` + `client_secret` in request body.
+        PKCE verification required for authorization_code grants.
+
+        Responses use raw RFC 6749 format with `Cache-Control: no-store`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - title: Authorization Code Exchange
+                  type: object
+                  required:
+                    - grant_type
+                    - code
+                    - redirect_uri
+                    - client_id
+                    - client_secret
+                    - code_verifier
+                  properties:
+                    grant_type:
+                      type: string
+                      enum:
+                        - authorization_code
+                    code:
+                      type: string
+                    redirect_uri:
+                      type: string
+                      format: uri
+                    client_id:
+                      type: string
+                    client_secret:
+                      type: string
+                    code_verifier:
+                      type: string
+                      minLength: 43
+                      maxLength: 128
+                    resource:
+                      type: string
+                      format: uri
+                - title: Refresh Token Exchange
+                  type: object
+                  required:
+                    - grant_type
+                    - refresh_token
+                    - client_id
+                    - client_secret
+                  properties:
+                    grant_type:
+                      type: string
+                      enum:
+                        - refresh_token
+                    refresh_token:
+                      type: string
+                    client_id:
+                      type: string
+                    client_secret:
+                      type: string
+      responses:
+        "200":
+          description: Token issued (RFC 6749 format)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    enum:
+                      - Bearer
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+                  scope:
+                    type: string
+        "400":
+          description: Invalid grant or parameters
+        "401":
+          description: Invalid client credentials
+        "429":
+          description: Rate limit exceeded
+  /v1/oauth/revoke:
+    post:
+      tags:
+        - OAuth
+      operationId: oauthRevoke
+      summary: Revoke an access or refresh token (RFC 7009)
+      description: |
+        OAuth token revocation endpoint per RFC 7009.
+        Allows clients to revoke access or refresh tokens.
+        Always returns 200 regardless of whether the token was valid,
+        to prevent token scanning attacks.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - client_id
+                - client_secret
+              properties:
+                token:
+                  type: string
+                  description: The access_token or refresh_token to revoke
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                token_type_hint:
+                  type: string
+                  enum:
+                    - access_token
+                    - refresh_token
+                  description: Optional hint about which type of token is being revoked
+      responses:
+        "200":
+          description: Token revoked (or token was already invalid/unknown)
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          description: Invalid client credentials
+        "429":
+          description: Rate limit exceeded
+  /v1/connect/insights:
+    get:
+      tags:
+        - Connector API
+      operationId: listConnectInsights
+      summary: List insights (paginated, PII-free)
+      description: |
+        Returns a paginated list of insights for programmatic access.
+        Uses page/per_page pagination. All responses are PII-free.
+      security:
+        - bearerAuth: []
+        - sessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-indexed)
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Results per page (max 100)
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum:
+              - feature_request
+              - pain_point
+              - bug
+              - pricing_feedback
+              - usability_issue
+              - workflow_gap
+              - blocker_deal_risk
+        - name: product_area
+          in: query
+          schema:
+            type: string
+          description: Filter by product area name
+        - name: min_frequency
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Minimum evidence count
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - frequency
+              - last_seen
+          description: Sort order (default frequency)
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+          description: Search insight titles
+      responses:
+        "200":
+          description: Paginated list of insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConnectInsight"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                      filters_applied:
+                        type: object
+        "401":
+          description: Invalid or missing API key
+        "402":
+          $ref: "#/components/responses/402_PaymentRequired"
+        "429":
+          description: Rate limit exceeded
+  /v1/connect/insights/{id}:
+    get:
+      tags:
+        - Connector API
+      operationId: getConnectInsight
+      summary: Get single insight with evidence
+      description: >
+        Returns a single insight by ID with the first page of PII-free evidence
+        attached.
+      security:
+        - bearerAuth: []
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Insight with evidence
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ConnectInsightWithEvidence"
+        "401":
+          description: Invalid or missing API key
+        "402":
+          $ref: "#/components/responses/402_PaymentRequired"
+        "404":
+          description: Insight not found
+        "429":
+          description: Rate limit exceeded
+  /v1/connect/insights/{id}/evidence:
+    get:
+      tags:
+        - Connector API
+      operationId: listConnectInsightEvidence
+      summary: List evidence for an insight (paginated, PII-free)
+      description: |
+        Returns paginated evidence items for a specific insight.
+        No PII: no speaker names, emails, or user IDs.
+      security:
+        - bearerAuth: []
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Paginated evidence list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConnectEvidence"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+        "401":
+          description: Invalid or missing API key
+        "402":
+          $ref: "#/components/responses/402_PaymentRequired"
+        "404":
+          description: Insight not found
+        "429":
+          description: Rate limit exceeded
+  /v1/insights:
+    get:
+      tags:
+        - Insights
+      operationId: listInsights
+      summary: List insights
+      description: >
+        List product insights for the authenticated user's company with
+        pagination.
+
+
+        **Pagination (two modes):**
+
+        - **Offset** (default): `?offset=0&limit=50` — simple but O(n) at high
+        offsets
+
+        - **Cursor** (preferred): `?cursor=<opaque>&limit=50` — O(log n) keyset
+        pagination
+
+        - When `cursor` is provided, `offset` is ignored
+
+        - Default: 50 items per page, max 100
+
+        - Sorted by weighted frequency score (descending)
+
+
+        **Caching:**
+
+        - Cache-Control: no-store (always fresh data)
+      parameters:
+        - $ref: "#/components/parameters/offsetParam"
+        - $ref: "#/components/parameters/limitParam"
+        - name: cursor
+          in: query
+          description: >
+            Opaque cursor for keyset pagination. When provided, offset is
+            ignored.
+
+            Obtained from `meta.nextCursor` in a previous response.
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Filter by insight category
+          schema:
+            type: string
+        - name: productAreaId
+          in: query
+          description: Filter by product area UUID
+          schema:
+            type: string
+            format: uuid
+        - name: ownerId
+          in: query
+          description: Filter by product area owner UUID
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          description: Search insight titles (case-insensitive, supports partial match)
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        "200":
+          description: Insights retrieved successfully
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header
+              example: no-store
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Insight"
+                      meta:
+                        type: object
+                        required:
+                          - limit
+                          - hasMore
+                        properties:
+                          total:
+                            type: integer
+                            description: Total number of insights (offset mode only)
+                          offset:
+                            type: integer
+                            description: Current offset (offset mode only)
+                          limit:
+                            type: integer
+                            description: Items per page
+                          hasMore:
+                            type: boolean
+                            description: Whether more items exist
+                          nextCursor:
+                            type: string
+                            nullable: true
+                            description: Opaque cursor for next page (cursor mode only, null if no more
+                              results)
+                          categoryCounts:
+                            type: object
+                            description: Count of active insights per category
+                            additionalProperties:
+                              type: integer
+                            example:
+                              feature_request: 12
+                              pain_point: 8
+                              bug: 3
+        "400":
+          description: Invalid cursor format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/insights/{id}:
+    get:
+      tags:
+        - Insights
+      operationId: getInsight
+      summary: Get single insight
+      description: |
+        Retrieve a specific insight by ID.
+
+        **Security:**
+        - Requires authentication
+        - RLS ensures company isolation
+      parameters:
+        - $ref: "#/components/parameters/idPathParam"
+      responses:
+        "200":
+          description: Insight retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Insight"
+        "400":
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              example:
+                error: Bad Request
+                message: Invalid insight ID format
+                code: BAD_REQUEST
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+    patch:
+      tags:
+        - Insights
+      operationId: updateInsight
+      summary: Update insight
+      description: |
+        Update an insight's title, category, or product area assignment.
+
+        **Security:**
+        - Requires authentication
+        - Requires CSRF token validation
+
+        **Side Effects:**
+        - Invalidates insights-dashboard cache
+        - Title changes trigger original_title capture (first edit only)
+        - Categories can be changed (user correction)
+        - Product areas can be reassigned
+      parameters:
+        - $ref: "#/components/parameters/idPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 200
+                  description: Updated insight title. First edit captures original AI-generated
+                    title.
+                product_area_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Product area to assign (null to unassign)
+                category:
+                  $ref: "#/components/schemas/InsightCategory"
+                  description: Updated category
+                workflow_status:
+                  type: string
+                  enum:
+                    - backlog
+                    - to_do
+                    - in_progress
+                    - done
+                  description: User-facing triage status (distinct from system status)
+            example:
+              title: Users need dark mode for night shifts
+              product_area_id: abc12345-6789-0def-1234-567890abcdef
+              category: feature_request
+              workflow_status: to_do
+      responses:
+        "200":
+          description: Insight updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Insight"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/insights/{id}/evidence:
+    get:
+      tags:
+        - Insights
+      operationId: getInsightEvidence
+      summary: Get evidence for an insight
+      description: |
+        Fetches evidence items for a specific insight, ordered by created_at
+        descending. Joins calls, form_submissions, and sheet_submissions.
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Evidence items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  evidence:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        content:
+                          type: string
+                        evidence_quote:
+                          type: string
+                        quote_speaker:
+                          type: string
+                          nullable: true
+                        sentiment:
+                          type: string
+                          nullable: true
+                        customerAttribution:
+                          type: object
+                          nullable: true
+                          description: >
+                            Enriched customer identity resolved from call
+                            participants, sheet row data, or the call title.
+                          properties:
+                            name:
+                              type: string
+                              description: Speaker or respondent display name
+                            company:
+                              type: string
+                              nullable: true
+                              description: Company name (may be inferred from call title)
+                            isInferred:
+                              type: boolean
+                              description: >
+                                True when the company value was heuristically
+                                extracted from the call title rather than from
+                                structured participant/form data.
+                          required:
+                            - name
+                            - company
+                            - isInferred
+                        confidence_score:
+                          type: number
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        source:
+                          type: object
+                          nullable: true
+                  hasMore:
+                    type: boolean
+                  total:
+                    type: integer
+        "401":
+          description: Not authenticated
+        "404":
+          description: Insight not found
+  /v1/insights/{id}/accounts:
+    get:
+      tags:
+        - Insights
+      operationId: getInsightAccounts
+      summary: Get CRM accounts linked to an insight
+      description: >
+        Returns CRM accounts linked to an insight via evidence domain matching.
+
+        Includes ARR, lifecycle stage, renewal date, and evidence count per
+        account.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      accounts:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/InsightAccount"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+  /v1/insights/{id}/timeline:
+    get:
+      tags:
+        - Insights
+      operationId: getInsightTimeline
+      summary: Get weekly evidence counts for an insight
+      description: |
+        Returns weekly evidence counts for an insight, aggregated server-side.
+        Used by the insight detail panel to render the frequency timeline chart.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 52
+            default: 12
+          description: Number of weeks to return (default 12, max 52)
+      responses:
+        "200":
+          description: Weekly evidence counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        week:
+                          type: string
+                          format: date
+                        count:
+                          type: integer
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+  /v1/insights/timelines:
+    get:
+      tags:
+        - Insights
+      operationId: getInsightTimelinesBatch
+      summary: Batch-fetch weekly evidence counts for many insights
+      description: |
+        Returns a map of `insight_id → weekly evidence counts`, aggregated
+        server-side. Used by the insights table to render per-row sparklines
+        in a single request instead of N per-insight calls.
+
+        Insights that don't belong to the caller's company are silently
+        omitted from the response (no partial-failure error), so the UI
+        can render placeholders for the missing ones.
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Comma-separated list of insight UUIDs (max 200).
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 52
+            default: 12
+          description: Number of weeks to return (default 12, max 52).
+      responses:
+        "200":
+          description: Weekly evidence counts keyed by insight id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      timelines:
+                        type: object
+                        additionalProperties:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              week:
+                                type: string
+                                format: date
+                              count:
+                                type: integer
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+  /v1/insights/frequency:
+    get:
+      tags:
+        - Insights
+      operationId: getInsightFrequency
+      summary: Get insight frequency statistics
+      description: |
+        Get frequency statistics for insights in a time period.
+
+        **Caching:**
+        - Dashboard cache (2 min default TTL)
+
+        **Periods:**
+        - `7d`: Last 7 days
+        - `30d`: Last 30 days
+        - `all`: All time (default)
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum:
+              - 7d
+              - 30d
+              - all
+            default: all
+          description: Time period for frequency analysis
+        - $ref: "#/components/parameters/limitParam"
+      responses:
+        "200":
+          description: Frequency statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - insights
+                  - total_evidence
+                  - total_calls
+                  - total_accounts
+                  - period
+                properties:
+                  insights:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Insight"
+                  total_evidence:
+                    type: integer
+                    description: Total evidence count
+                  total_calls:
+                    type: integer
+                    description: Total calls analyzed
+                  total_accounts:
+                    type: integer
+                    description: Total unique accounts
+                  period:
+                    type: string
+                    description: Time period
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/insights/bulk:
+    patch:
+      tags:
+        - Insights
+      operationId: bulkUpdateInsights
+      summary: Bulk update insights
+      description: >
+        Bulk update multiple insights at once. Currently supports bulk product
+        area assignment.
+
+        Uses the `batch_update_insights` RPC for efficient single-query updates.
+
+
+        **Security:**
+
+        - Requires authentication
+
+        - Requires CSRF token validation
+
+        - RLS ensures company isolation
+
+
+        **Responses:**
+
+        - 200: All updates succeeded
+
+        - 207: Partial success (some updates failed)
+
+        - 400: All updates failed
+
+
+        **Limits:**
+
+        - Maximum 100 insights per request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - insightIds
+                - product_area_id
+              properties:
+                insightIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  minItems: 1
+                  maxItems: 100
+                  description: IDs of insights to update
+                product_area_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Product area to assign (null to clear assignment)
+            example:
+              insightIds:
+                - abc12345-6789-0def-1234-567890abcdef
+                - def67890-1234-5abc-6789-0def12345678
+              product_area_id: 789abcde-f012-3456-789a-bcdef0123456
+      responses:
+        "200":
+          description: All updates succeeded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          succeeded:
+                            type: integer
+                            description: Number of successfully updated insights
+                          failed:
+                            type: integer
+                            description: Number of failed updates (0 for 200)
+                          errors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                error:
+                                  type: string
+                            description: Empty array for 200
+        "207":
+          description: Partial success — some updates failed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          succeeded:
+                            type: integer
+                          failed:
+                            type: integer
+                          errors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                error:
+                                  type: string
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/insights/merge:
+    post:
+      tags:
+        - Insights
+      operationId: mergeInsights
+      summary: Merge two insights
+      description: >
+        Merge source insight into target. All evidence from source is reassigned
+
+        to target. Source insight is soft-deleted with status='merged'.
+
+
+        **Security:**
+
+        - Requires authentication
+
+        - Requires CSRF token validation
+
+        - RLS ensures company isolation
+
+
+        **Behavior:**
+
+        - All evidence from source is moved to target
+
+        - Source insight status set to 'merged' with merged_into_id pointing to
+        target
+
+        - Target metrics (evidence_count, call_count, etc.) are recalculated
+
+        - Merge is logged in insight_dedup_log with decision_basis='manual'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sourceInsightId
+                - targetInsightId
+              properties:
+                sourceInsightId:
+                  type: string
+                  format: uuid
+                  description: ID of the insight to merge away (will be soft-deleted)
+                targetInsightId:
+                  type: string
+                  format: uuid
+                  description: ID of the insight to keep (will absorb evidence)
+      responses:
+        "200":
+          description: Merge successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          target_id:
+                            type: string
+                            format: uuid
+                          evidence_count:
+                            type: integer
+                          call_count:
+                            type: integer
+                          account_count:
+                            type: integer
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "429":
+          $ref: "#/components/responses/429_RateLimited"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/insights/unmerge:
+    post:
+      tags:
+        - Insights
+      operationId: unmergeInsights
+      summary: Undo an insight merge
+      description: >
+        Undo a manual insight merge. Restores the source insight to active
+        status,
+
+        moves evidence back based on the dedup log record, and recalculates
+        metrics.
+
+
+        **Security:**
+
+        - Requires authentication
+
+        - Requires CSRF token validation
+
+        - RLS ensures company isolation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sourceInsightId
+                - targetInsightId
+              properties:
+                sourceInsightId:
+                  type: string
+                  format: uuid
+                  description: ID of the previously merged (soft-deleted) insight to restore
+                targetInsightId:
+                  type: string
+                  format: uuid
+                  description: ID of the insight that absorbed the evidence
+      responses:
+        "200":
+          description: Unmerge successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          success:
+                            type: boolean
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "429":
+          $ref: "#/components/responses/429_RateLimited"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/product-areas:
+    get:
+      tags:
+        - Product Areas
+      operationId: listProductAreas
+      summary: List all product areas
+      description: |
+        Get all product areas for the authenticated user's company.
+        Results are cached and ordered by display_order.
+      responses:
+        "200":
+          description: List of product areas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductArea"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+    post:
+      tags:
+        - Product Areas
+      operationId: createProductArea
+      summary: Create a new product area
+      description: |
+        Create a new product area for categorizing insights.
+        Only admins (owners) can create product areas.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductAreaRequest"
+      responses:
+        "200":
+          description: Product area created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ProductArea"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "409":
+          $ref: "#/components/responses/409_Conflict"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/product-areas/{id}:
+    patch:
+      tags:
+        - Product Areas
+      operationId: updateProductArea
+      summary: Update a product area
+      description: |
+        Update an existing product area's name, description, or display order.
+        Only admins (owners) can update product areas.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      parameters:
+        - $ref: "#/components/parameters/idPathParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                description:
+                  type: string
+                  maxLength: 200
+                  nullable: true
+                display_order:
+                  type: integer
+                  minimum: 0
+                owner_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: ID of the team member to assign as owner (null to unassign)
+      responses:
+        "200":
+          description: Product area updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/ProductArea"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "409":
+          $ref: "#/components/responses/409_Conflict"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+    delete:
+      tags:
+        - Product Areas
+      operationId: deleteProductArea
+      summary: Delete a product area
+      description: |
+        Delete a product area. Cannot delete if insights are using this area.
+        Only admins (owners) can delete product areas.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      parameters:
+        - $ref: "#/components/parameters/idPathParam"
+      responses:
+        "204":
+          description: Product area deleted successfully
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "404":
+          $ref: "#/components/responses/404_NotFound"
+        "409":
+          description: Cannot delete - product area is in use by insights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              example:
+                error: Conflict
+                message: Cannot delete product area. It is used by 5 insights.
+                code: CONFLICT
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/settings/company:
+    patch:
+      tags:
+        - Settings
+      operationId: updateCompany
+      summary: Update company details
+      description: |
+        Update company details (name) for the authenticated company.
+        Only owners can update company details.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  description: Company name
+            example:
+              name: Acme Corporation
+      responses:
+        "200":
+          description: Company updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/settings/context:
+    get:
+      tags:
+        - Settings
+      operationId: getCompanyContext
+      summary: Get active company context
+      description: >
+        Returns the active company context version for the authenticated
+        company.
+
+
+        **Security:**
+
+        - Requires authentication (withDualAuth — session or API key)
+      responses:
+        "200":
+          description: Company context retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          context:
+                            $ref: "#/components/schemas/CompanyContext"
+                            nullable: true
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+    post:
+      tags:
+        - Settings
+      operationId: updateCompanyContext
+      summary: Create new company context version
+      description: |
+        Persist a new company context version for the authenticated company.
+        Creates a new version with is_active=true.
+        Only admins can update context.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - context
+              properties:
+                context:
+                  $ref: "#/components/schemas/CompanyContextInput"
+      responses:
+        "200":
+          description: Company context created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  context:
+                    $ref: "#/components/schemas/CompanyContext"
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+  /v1/settings/context/clear:
+    delete:
+      tags:
+        - Settings
+      operationId: clearCompanyContext
+      summary: Clear company context
+      description: |
+        Deactivates the company's active context. This pauses insight generation
+        until a new context is saved. Existing insights are not deleted.
+
+        **Security:**
+        - Requires owner role
+        - Requires CSRF token validation
+      responses:
+        "204":
+          description: Company context cleared successfully
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "403":
+          $ref: "#/components/responses/403_Forbidden"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+      description: |
+        Supabase session JWT stored in httpOnly cookie.
+        Automatically included by browsers for authenticated requests.
+        Contains user identity and company context for Row-Level Security.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: x-csrf-token
+      description: |
+        CSRF token for mutation operations (POST, PATCH, PUT, DELETE).
+        Implements double-submit cookie pattern for CSRF protection.
+        Token is generated on first visit and stored in both cookie and header.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: >
+        API key authentication. Include your Hearflow API key (hf_live_...) in
+        the
+
+        Authorization header as a Bearer token. Used for programmatic access and
+
+        OAuth-issued tokens.
+    cronSecret:
+      type: apiKey
+      in: header
+      name: X-Cron-Secret
+      description: |
+        Secret for scheduled cron job endpoints.
+        Minimum 32 characters with high entropy (10+ unique chars).
+        Validated at startup in production environments.
+  schemas:
+    DashboardLayout:
+      type: object
+      required:
+        - widgets
+        - gridLayout
+      properties:
+        widgets:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/WidgetConfig"
+        gridLayout:
+          type: object
+          required:
+            - lg
+            - md
+            - sm
+          properties:
+            lg:
+              type: array
+              items:
+                $ref: "#/components/schemas/GridLayoutItem"
+            md:
+              type: array
+              items:
+                $ref: "#/components/schemas/GridLayoutItem"
+            sm:
+              type: array
+              items:
+                $ref: "#/components/schemas/GridLayoutItem"
+    WidgetConfig:
+      type: object
+      required:
+        - id
+        - type
+        - chartVariant
+        - title
+        - timeRange
+        - settings
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - category_breakdown
+            - weekly_trend
+            - product_areas
+            - insight_frequency
+            - evidence_quality
+            - source_breakdown
+            - trend_line
+        chartVariant:
+          type: string
+          enum:
+            - pie
+            - donut
+            - bar
+            - horizontal_bar
+            - area
+            - line
+            - stacked_bar
+        title:
+          type: string
+          maxLength: 100
+        timeRange:
+          type: string
+          enum:
+            - 7d
+            - 30d
+            - 90d
+            - all
+        settings:
+          type: object
+          additionalProperties: true
+    GridLayoutItem:
+      type: object
+      required:
+        - i
+        - x
+        - y
+        - w
+        - h
+      properties:
+        i:
+          type: string
+        x:
+          type: integer
+          minimum: 0
+        y:
+          type: integer
+          minimum: 0
+        w:
+          type: integer
+          minimum: 1
+          maximum: 12
+        h:
+          type: integer
+          minimum: 1
+          maximum: 12
+        minW:
+          type: integer
+        minH:
+          type: integer
+        maxW:
+          type: integer
+        maxH:
+          type: integer
+    TranscriptUploadResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            uploaded:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  index:
+                    type: integer
+                    description: Position in the request transcripts array
+                  status:
+                    type: string
+                    enum:
+                      - pending
+                  runId:
+                    type: string
+                    description: Trigger.dev run ID for realtime progress tracking
+            duplicates:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  title:
+                    type: string
+                  index:
+                    type: integer
+                    description: Position in the request transcripts array
+                  status:
+                    type: string
+                    enum:
+                      - duplicate
+            failed:
+              type: array
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  index:
+                    type: integer
+                    description: Position in the request transcripts array
+                  error:
+                    type: string
+                    description: Human-readable error message
+    TeamInvitationRole:
+      type: string
+      enum:
+        - admin
+        - member
+        - viewer
+      description: Role to assign to the invited user
+    TeamInvitationStatus:
+      type: string
+      enum:
+        - pending
+        - accepted
+        - revoked
+        - expired
+      description: Current status of the invitation
+    CsvUpload:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        label:
+          type: string
+        content_hash:
+          type: string
+        column_mapping:
+          type: object
+        row_count:
+          type: integer
+        processed_count:
+          type: integer
+        failed_count:
+          type: integer
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - partial_success
+            - failed
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CsvUploadSummary:
+      type: object
+      description: Reduced CSV upload record for list endpoints
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        label:
+          type: string
+        row_count:
+          type: integer
+        processed_count:
+          type: integer
+        failed_count:
+          type: integer
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - partial_success
+            - failed
+        error_message:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ConnectInsight:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: Insight title
+        category:
+          type: string
+          enum:
+            - feature_request
+            - pain_point
+            - bug
+            - pricing_feedback
+            - usability_issue
+            - workflow_gap
+            - blocker_deal_risk
+        product_area:
+          type: string
+          nullable: true
+        evidence_count:
+          type: integer
+          description: Number of evidence items supporting this insight
+        first_seen:
+          type: string
+          format: date-time
+          nullable: true
+        last_seen:
+          type: string
+          format: date-time
+          nullable: true
+    ConnectInsightWithEvidence:
+      allOf:
+        - $ref: "#/components/schemas/ConnectInsight"
+        - type: object
+          properties:
+            evidence:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConnectEvidence"
+    ConnectEvidence:
+      type: object
+      description: PII-free evidence item. No speaker names, emails, or user IDs.
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum:
+            - call
+            - form
+            - sheet
+            - csv
+        source_type:
+          type: string
+          description: Provider name (fireflies, zoom, tally, google_sheets)
+        text:
+          type: string
+          description: Evidence quote or content
+        metadata:
+          type: object
+          properties:
+            call_id:
+              type: string
+              format: uuid
+              nullable: true
+            channel:
+              type: string
+              nullable: true
+        created_at:
+          type: string
+          format: date-time
+    AnalyticsProfile:
+      type: object
+      description: Consolidated analytics profile data for user identification
+      properties:
+        user_full_name:
+          type: string
+          nullable: true
+          description: User's full name
+        user_role:
+          type: string
+          nullable: true
+          description: User's role in the company (owner, admin, member)
+        user_created_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the user account was created
+        company_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: User's company UUID
+        company_name:
+          type: string
+          nullable: true
+          description: Company name
+        company_slug:
+          type: string
+          nullable: true
+          description: URL-safe company identifier
+        company_subscription_tier:
+          type: string
+          nullable: true
+          description: Subscription tier (free, pro, enterprise)
+        company_subscription_status:
+          type: string
+          nullable: true
+          description: Subscription status (active, past_due, canceled)
+        company_created_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the company was created
+        industry:
+          type: string
+          nullable: true
+          description: Company industry from company_contexts
+        integration_count:
+          type: integer
+          description: Number of active integrations
+        has_fireflies:
+          type: boolean
+          description: Whether company has active Fireflies integration
+        has_zoom:
+          type: boolean
+          description: Whether company has active Zoom integration
+        has_tally:
+          type: boolean
+          description: Whether company has active Tally integration
+        has_google_sheets:
+          type: boolean
+          description: Whether company has active Google Sheets integration
+        insight_count:
+          type: integer
+          description: Total number of insights for the company
+        evidence_count:
+          type: integer
+          description: Total number of evidence records for the company
+    ApiSuccessResponse:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          description: Response payload (type varies by endpoint)
+        meta:
+          type: object
+          additionalProperties: true
+          description: Optional metadata (pagination, timestamps, etc.)
+      example:
+        data: {}
+        meta:
+          timestamp: 2026-01-26T10:00:00Z
+    ApiErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: HTTP error name
+          example: Bad Request
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid request body
+        code:
+          type: string
+          description: Programmatic error code for client handling
+          example: VALIDATION_FAILED
+        details:
+          description: Additional error context (validation errors, stack traces in dev,
+            etc.)
+          example:
+            - field: provider
+              message: Provider is required
+        retryAfter:
+          oneOf:
+            - type: number
+            - type: string
+          description: Retry delay in seconds for rate limiting (429 responses)
+          example: 60
+    ValidationError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: JSON path to the invalid field
+          example: credentials.apiKey
+        message:
+          type: string
+          description: Human-readable validation error message
+          example: API key is required
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - limit
+        - total
+        - hasMore
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number (1-based)
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Number of items per page
+          example: 50
+        total:
+          type: integer
+          minimum: 0
+          description: Total number of items across all pages
+          example: 150
+        hasMore:
+          type: boolean
+          description: Whether there are more pages available
+          example: true
+    UserRole:
+      type: string
+      enum:
+        - owner
+        - admin
+        - member
+        - viewer
+      description: >
+        User role within a company:
+
+        - `owner`: Full access to all features, settings, and team management
+
+        - `admin`: Full access to features and settings, excluding company-level
+        billing/delete actions
+
+        - `member`: Can view and interact with insights, limited settings access
+
+        - `viewer`: Read-only access to insights and themes
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - company_id
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User identifier
+        email:
+          type: string
+          format: email
+          description: User email address
+        full_name:
+          type: string
+          nullable: true
+          description: User's full name
+        role:
+          $ref: "#/components/schemas/UserRole"
+        company_id:
+          type: string
+          format: uuid
+          description: Company this user belongs to
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last profile update timestamp
+    Company:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Company identifier
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Company name
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+          description: URL-friendly company identifier
+        subscription_status:
+          type: string
+          enum:
+            - active
+            - trial
+            - inactive
+            - cancelled
+            - past_due
+          description: Subscription status
+        subscription_tier:
+          type: string
+          enum:
+            - free
+            - starter
+            - pro
+            - enterprise
+          description: Subscription tier
+        created_at:
+          type: string
+          format: date-time
+          description: Company creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last company update timestamp
+    SessionResponse:
+      type: object
+      required:
+        - authenticated
+      properties:
+        authenticated:
+          type: boolean
+          description: Whether the user is authenticated
+        user:
+          $ref: "#/components/schemas/User"
+          description: User profile (only if authenticated)
+        company:
+          $ref: "#/components/schemas/Company"
+          description: User's company (only if authenticated)
+      example:
+        authenticated: true
+        user:
+          id: 123e4567-e89b-12d3-a456-426614174000
+          email: user@example.com
+          full_name: John Doe
+          role: owner
+          company_id: 987fcdeb-51a2-43f7-8b6d-123456789abc
+          created_at: 2026-01-15T10:00:00Z
+          updated_at: 2026-01-15T10:00:00Z
+        company:
+          id: 987fcdeb-51a2-43f7-8b6d-123456789abc
+          name: Acme Corp
+          slug: acme-corp
+          subscription_status: active
+          subscription_tier: pro
+          created_at: 2026-01-15T10:00:00Z
+          updated_at: 2026-01-15T10:00:00Z
+    IntegrationProvider:
+      type: string
+      enum:
+        - fireflies
+        - zoom
+        - tally
+        - google_sheets
+        - google_meet
+        - slack
+        - gmail
+        - hubspot
+        - asana
+        - notion
+        - clickup
+        - csv
+        - manual_upload
+      description: |
+        Integration provider type:
+        - `fireflies`: Fireflies.ai transcript provider
+        - `zoom`: Zoom cloud recording transcript provider
+        - `tally`: Tally form submission provider
+        - `google_sheets`: Google Sheets data source provider
+        - `google_meet`: Google Meet transcript provider
+        - `slack`: Slack workspace message provider
+        - `gmail`: Gmail email thread provider
+        - `hubspot`: HubSpot CRM provider
+        - `asana`: Asana task and comment provider
+        - `notion`: Notion page and database provider
+        - `clickup`: ClickUp task and comment provider
+        - `csv`: CSV file upload provider
+        - `manual_upload`: Manual file upload provider
+    IntegrationStatus:
+      type: string
+      enum:
+        - pending
+        - active
+        - error
+      description: |
+        Integration status:
+        - `pending`: Integration created, backfill job queued but not complete
+        - `active`: Integration active and syncing
+        - `error`: Integration encountered an error and needs attention
+    IntegrationPublic:
+      type: object
+      required:
+        - id
+        - company_id
+        - provider
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Integration identifier
+        company_id:
+          type: string
+          format: uuid
+          description: Company owning this integration
+        provider:
+          $ref: "#/components/schemas/IntegrationProvider"
+        status:
+          $ref: "#/components/schemas/IntegrationStatus"
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sync timestamp
+        last_health_check_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last health check timestamp
+        error_message:
+          type: string
+          nullable: true
+          description: Error message if status is 'error'
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Provider-specific metadata (tier, user info, etc.)
+        backfill_status:
+          type: string
+          enum:
+            - pending
+            - in_progress
+            - completed
+            - partial_success
+            - failed
+          nullable: true
+          description: Historical data backfill status
+        created_at:
+          type: string
+          format: date-time
+          description: Integration creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last integration update timestamp
+      example:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        company_id: 987fcdeb-51a2-43f7-8b6d-123456789abc
+        provider: fireflies
+        status: active
+        last_sync_at: 2026-01-26T09:00:00Z
+        last_health_check_at: 2026-01-26T09:30:00Z
+        error_message: null
+        metadata:
+          tier: business
+          user_email: user@example.com
+        backfill_status: completed
+        created_at: 2026-01-15T11:00:00Z
+        updated_at: 2026-01-26T09:00:00Z
+    CustomRoleDefinition:
+      type: object
+      required:
+        - id
+        - label
+      description: A user-defined custom role for field mapping. IDs must match
+        `custom_[a-z0-9_]+`.
+      properties:
+        id:
+          type: string
+          pattern: ^custom_[a-z0-9_]{1,60}$
+          description: Unique role ID (must start with `custom_`)
+        label:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable display label
+    GoogleSheetsSource:
+      type: object
+      required:
+        - id
+        - integration_id
+        - spreadsheet_id
+        - spreadsheet_name
+        - sheet_name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Source identifier
+        integration_id:
+          type: string
+          format: uuid
+          description: Parent Google Sheets integration ID
+        spreadsheet_id:
+          type: string
+          description: Google Spreadsheet ID
+        spreadsheet_name:
+          type: string
+          description: Display name of the spreadsheet
+        sheet_name:
+          type: string
+          description: Name of the sheet (tab)
+        range_a1:
+          type: string
+          description: A1 notation range being synced
+        sync_enabled:
+          type: boolean
+          description: Whether this source is included in daily syncs
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sync timestamp
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      example:
+        id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        integration_id: 550e8400-e29b-41d4-a716-446655440000
+        spreadsheet_id: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
+        spreadsheet_name: Customer Feedback
+        sheet_name: Sheet1
+        range_a1: A1:Z
+        sync_enabled: true
+        last_sync_at: 2026-02-01T09:00:00Z
+        created_at: 2026-01-20T10:00:00Z
+        updated_at: 2026-02-01T09:00:00Z
+    ClickUpSource:
+      type: object
+      required:
+        - id
+        - integration_id
+        - team_id
+        - team_name
+        - space_id
+        - space_name
+        - list_id
+        - list_name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Source identifier
+        integration_id:
+          type: string
+          format: uuid
+          description: Parent ClickUp integration ID
+        team_id:
+          type: string
+          description: ClickUp team (workspace) ID
+        team_name:
+          type: string
+          description: Team display name
+        space_id:
+          type: string
+          description: ClickUp space ID
+        space_name:
+          type: string
+          description: Space display name
+        folder_id:
+          type: string
+          nullable: true
+          description: Folder ID (null for folderless Lists directly under a Space)
+        folder_name:
+          type: string
+          nullable: true
+          description: Folder display name
+        list_id:
+          type: string
+          description: ClickUp List ID
+        list_name:
+          type: string
+          description: List display name
+        source_purpose:
+          type: string
+          enum:
+            - general
+            - feature_requests
+            - bugs
+            - feedback
+          description: Declared purpose of this List for AI classification bias
+        sync_enabled:
+          type: boolean
+          description: Whether this List is included in daily syncs
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sync timestamp
+      example:
+        id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        integration_id: 550e8400-e29b-41d4-a716-446655440000
+        team_id: "9000000001"
+        team_name: Acme
+        space_id: "9000010001"
+        space_name: Product
+        folder_id: "9000020001"
+        folder_name: Inbound
+        list_id: "9000030001"
+        list_name: Feature Requests
+        source_purpose: feature_requests
+        sync_enabled: true
+        last_sync_at: 2026-02-01T09:00:00Z
+    FirefliesCredentials:
+      type: object
+      required:
+        - provider
+        - apiKey
+      properties:
+        provider:
+          type: string
+          enum:
+            - fireflies
+        apiKey:
+          type: string
+          minLength: 1
+          description: Fireflies.ai API key
+      example:
+        provider: fireflies
+        apiKey: ff_live_abc123xyz...
+    ZoomCredentials:
+      type: object
+      required:
+        - provider
+        - accessToken
+        - refreshToken
+        - expiresAt
+      properties:
+        provider:
+          type: string
+          enum:
+            - zoom
+        accessToken:
+          type: string
+          minLength: 1
+          description: Zoom OAuth access token
+        refreshToken:
+          type: string
+          minLength: 1
+          description: Zoom OAuth refresh token
+        expiresAt:
+          type: number
+          minimum: 0
+          description: Access token expiration timestamp (Unix epoch)
+      example:
+        provider: zoom
+        accessToken: eyJ...
+        refreshToken: def...
+        expiresAt: 1706356800
+    TallyCredentials:
+      type: object
+      required:
+        - provider
+        - apiKey
+      properties:
+        provider:
+          type: string
+          enum:
+            - tally
+        apiKey:
+          type: string
+          minLength: 1
+          description: Tally API key
+      example:
+        provider: tally
+        apiKey: tally_abc123...
+    GoogleSheetsCredentials:
+      type: object
+      required:
+        - provider
+        - accessToken
+        - refreshToken
+        - expiresAt
+      properties:
+        provider:
+          type: string
+          enum:
+            - google_sheets
+        accessToken:
+          type: string
+          minLength: 1
+          description: Google OAuth access token
+        refreshToken:
+          type: string
+          minLength: 1
+          description: Google OAuth refresh token
+        expiresAt:
+          type: number
+          minimum: 0
+          description: Access token expiration timestamp (Unix epoch)
+      example:
+        provider: google_sheets
+        accessToken: ya29...
+        refreshToken: 1//...
+        expiresAt: 1706356800
+    CreateIntegrationRequest:
+      oneOf:
+        - $ref: "#/components/schemas/FirefliesCredentials"
+        - $ref: "#/components/schemas/ZoomCredentials"
+        - $ref: "#/components/schemas/TallyCredentials"
+      discriminator:
+        propertyName: provider
+        mapping:
+          fireflies: "#/components/schemas/FirefliesCredentials"
+          zoom: "#/components/schemas/ZoomCredentials"
+          tally: "#/components/schemas/TallyCredentials"
+    InsightCategory:
+      type: string
+      enum:
+        - feature_request
+        - pain_point
+        - bug
+        - pricing_feedback
+        - usability_issue
+        - workflow_gap
+        - blocker_deal_risk
+      description: |
+        Product insight category:
+        - `feature_request`: What customers want built
+        - `pain_point`: Friction or frustration with current experience
+        - `bug`: Something broken or not working correctly
+        - `pricing_feedback`: Feedback about pricing or packaging
+        - `usability_issue`: Confusion or difficulty using the product
+        - `workflow_gap`: Missing workflow or process support
+        - `blocker_deal_risk`: Issues that may cause churn or block deals
+    RelatedInsight:
+      type: object
+      description: A related insight returned from vector similarity search
+      required:
+        - id
+        - title
+        - category
+        - evidence_count
+        - similarity
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique insight identifier
+        title:
+          type: string
+          description: Insight title
+        category:
+          type: string
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/InsightCategory"
+          description: Insight category
+        evidence_count:
+          type: integer
+          minimum: 0
+          description: Number of evidence items supporting this insight
+        similarity:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Cosine similarity score to the source insight
+    Sentiment:
+      type: string
+      enum:
+        - positive
+        - negative
+        - neutral
+      description: Overall sentiment of the insight
+    Severity:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+        - critical
+      description: Severity level of the insight (especially for bugs and blockers)
+    HubSpotFieldMapping:
+      type: object
+      required:
+        - arr
+        - lifecycle_stage
+      properties:
+        arr:
+          type: string
+          description: HubSpot property name for ARR (default annualrevenue)
+          example: annualrevenue
+        lifecycle_stage:
+          type: string
+          description: HubSpot property name for lifecycle stage
+          example: lifecyclestage
+        renewal_date:
+          type: string
+          description: HubSpot property name for renewal date (optional)
+          example: closedate
+    HubSpotFeatures:
+      type: object
+      description: Granular HubSpot feature toggles
+      properties:
+        crm_enrichment:
+          type: boolean
+        support_tickets:
+          type: boolean
+        calls:
+          type: boolean
+        inbox:
+          type: boolean
+    InsightAccount:
+      type: object
+      required:
+        - id
+        - name
+        - evidence_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        domain:
+          type: string
+          nullable: true
+        arr:
+          type: number
+          nullable: true
+          description: Annual Recurring Revenue
+        lifecycle_stage:
+          type: string
+          nullable: true
+          enum:
+            - lead
+            - prospect
+            - customer
+            - churned
+            - other
+        renewal_date:
+          type: string
+          format: date
+          nullable: true
+          description: Contract renewal date
+        evidence_count:
+          type: integer
+          description: Number of evidence items linked to this account for this insight
+    Insight:
+      type: object
+      required:
+        - id
+        - company_id
+        - category
+        - content
+        - evidence_quote
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Insight identifier
+        company_id:
+          type: string
+          format: uuid
+          description: Company owning this insight
+        category:
+          $ref: "#/components/schemas/InsightCategory"
+        content:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Clustered insight summary content
+        evidence_quote:
+          type: string
+          minLength: 5
+          maxLength: 1000
+          description: Direct quote from transcript as evidence
+        quote_speaker:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Speaker name for the evidence quote
+        sentiment:
+          $ref: "#/components/schemas/Sentiment"
+        severity:
+          $ref: "#/components/schemas/Severity"
+          nullable: true
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: AI confidence score for this insight
+        product_area_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Product area this insight is categorized under
+        embedding:
+          type: array
+          items:
+            type: number
+          minItems: 1536
+          maxItems: 1536
+          description: Vector embedding for similarity search (1536-dim Ada-002)
+        needs_review:
+          type: boolean
+          description: Whether this insight needs manual review
+        created_at:
+          type: string
+          format: date-time
+          description: Insight creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last insight update timestamp
+      example:
+        id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        company_id: 987fcdeb-51a2-43f7-8b6d-123456789abc
+        category: feature_request
+        content: Customers want bulk export of insights to Excel/CSV
+        evidence_quote: It would be really helpful if I could export all our feedback to
+          Excel in one click
+        quote_speaker: Sarah Johnson
+        sentiment: neutral
+        severity: medium
+        confidence_score: 0.92
+        product_area_id: abc12345-6789-0def-1234-567890abcdef
+        needs_review: false
+        created_at: 2026-01-20T15:30:00Z
+        updated_at: 2026-01-26T10:15:00Z
+    ProductLine:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Product line name
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Product line description
+      example:
+        name: Enterprise CRM
+        description: Cloud-based customer relationship management for mid-market
+    UseCase:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Use case name
+      example:
+        name: Sales Pipeline Management
+    CompanyContext:
+      type: object
+      required:
+        - id
+        - company_id
+        - is_active
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Context version identifier
+        company_id:
+          type: string
+          format: uuid
+          description: Company this context belongs to
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+          description: Company description and background
+        industry:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Company industry
+        product_lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductLine"
+          description: Company's product lines
+        business_goals:
+          type: array
+          items:
+            type: string
+          description: Company's business goals
+        use_cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/UseCase"
+          description: Primary customer use cases
+        competitors:
+          type: array
+          items:
+            type: string
+          description: Known competitors
+        is_active:
+          type: boolean
+          description: Whether this is the active context version
+        created_at:
+          type: string
+          format: date-time
+          description: Context creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last context update timestamp
+    ProductArea:
+      type: object
+      required:
+        - id
+        - company_id
+        - name
+        - display_order
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Product area identifier
+        company_id:
+          type: string
+          format: uuid
+          description: Company owning this product area
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Product area name
+        description:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Product area description
+        display_order:
+          type: integer
+          minimum: 0
+          description: Sort order for display
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the assigned owner (team member)
+        owner:
+          type: object
+          nullable: true
+          description: The assigned owner's profile (populated in responses)
+          properties:
+            id:
+              type: string
+              format: uuid
+            full_name:
+              type: string
+              nullable: true
+            email:
+              type: string
+              format: email
+            avatar_url:
+              type: string
+              nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: Product area creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last product area update timestamp
+      example:
+        id: abc12345-6789-0def-1234-567890abcdef
+        company_id: 987fcdeb-51a2-43f7-8b6d-123456789abc
+        name: Analytics Dashboard
+        description: Reporting and data visualization features
+        display_order: 1
+        created_at: 2026-01-15T12:00:00Z
+        updated_at: 2026-01-15T12:00:00Z
+    CreateProductAreaRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Product area name
+        description:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Product area description
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the team member to assign as owner
+      example:
+        name: Mobile App
+        description: iOS and Android mobile applications
+    HealthStatus:
+      type: string
+      enum:
+        - alive
+        - healthy
+        - degraded
+        - unhealthy
+      description: |
+        System health status:
+        - `alive`: Basic liveness (no dependency checks)
+        - `healthy`: All critical dependencies operational
+        - `degraded`: Some non-critical dependencies down
+        - `unhealthy`: Critical dependencies failing
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          $ref: "#/components/schemas/HealthStatus"
+        checks:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - healthy
+                    - unhealthy
+                responseTime:
+                  type: number
+                  description: Response time in milliseconds
+            redis:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - healthy
+                    - degraded
+                    - unhealthy
+                responseTime:
+                  type: number
+            triggerdev:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - healthy
+                    - unhealthy
+                    - unavailable
+                responseTime:
+                  type: number
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+        version:
+          type: string
+          description: API version
+        uptime:
+          type: number
+          description: Server uptime in seconds
+    CompanyContextInput:
+      type: object
+      required:
+        - industry
+        - productOffering
+      properties:
+        industry:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Company industry
+        productOffering:
+          type: string
+          minLength: 10
+          maxLength: 2000
+          description: Description of the company's products/services
+        businessGoals:
+          type: array
+          items:
+            type: string
+            minLength: 2
+            maxLength: 200
+          maxItems: 50
+          default: []
+          description: >
+            Business goals. Optional - defaults to empty array if not provided.
+
+            UI no longer prompts for this field, but API still accepts it for
+            backwards compatibility.
+        keyPainPoints:
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          description: Key pain points the company addresses
+        competitors:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 50
+          description: Known competitors
+        source:
+          type: string
+          enum:
+            - manual
+            - ai_research
+          description: How the context was created
+      example:
+        industry: B2B SaaS
+        productOffering: A product intelligence platform that transforms customer call
+          transcripts into actionable insights
+        businessGoals:
+          - Increase product adoption
+          - Reduce customer churn
+          - Improve feature prioritization
+        competitors:
+          - Gong
+          - Dovetail
+        source: ai_research
+  responses:
+    200_Success:
+      description: Successful operation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiSuccessResponse"
+    201_Created:
+      description: Resource created successfully
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiSuccessResponse"
+    204_NoContent:
+      description: Success with no response body
+    400_BadRequest:
+      description: Validation error or malformed request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          examples:
+            validationError:
+              summary: Field validation failed
+              value:
+                error: Bad Request
+                message: Invalid request body
+                code: VALIDATION_FAILED
+                details:
+                  - field: provider
+                    message: Provider is required
+                  - field: credentials.apiKey
+                    message: API key is required
+            invalidJson:
+              summary: Malformed JSON
+              value:
+                error: Bad Request
+                message: Request body must be valid JSON
+                code: INVALID_JSON
+    401_Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          example:
+            error: Unauthorized
+            message: Authentication required
+            code: UNAUTHORIZED
+    403_Forbidden:
+      description: Insufficient permissions or CSRF validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          examples:
+            csrfInvalid:
+              summary: CSRF token validation failed
+              value:
+                error: Forbidden
+                message: CSRF token invalid or missing
+                code: CSRF_INVALID
+            insufficientPermissions:
+              summary: User lacks required permissions
+              value:
+                error: Forbidden
+                message: Only admins can create integrations
+                code: FORBIDDEN
+    404_NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          examples:
+            resourceNotFound:
+              summary: Requested resource does not exist
+              value:
+                error: Not Found
+                message: Resource not found
+                code: NOT_FOUND
+            profileNotFound:
+              summary: User profile not found
+              value:
+                error: Not Found
+                message: User profile not found
+                code: PROFILE_NOT_FOUND
+    409_Conflict:
+      description: Duplicate resource or state conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          examples:
+            duplicateIntegration:
+              summary: Integration already exists
+              value:
+                error: Conflict
+                message: An integration for fireflies already exists for this company
+                code: CONFLICT
+            duplicateEmail:
+              summary: Email already registered
+              value:
+                error: Conflict
+                message: An account with this email already exists
+                code: CONFLICT
+    IdempotencyConflict:
+      description: A request with this Idempotency-Key is already being processed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Conflict
+              message:
+                type: string
+                example: A request with this Idempotency-Key is already being processed
+              code:
+                type: string
+                example: IDEMPOTENCY_CONFLICT
+    402_PaymentRequired:
+      description: Subscription inactive — reactivate to continue
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          example:
+            error: Payment Required
+            message: Your subscription is inactive. Please reactivate to continue.
+            code: PAYMENT_REQUIRED
+    429_RateLimited:
+      description: Too many requests - rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the client can retry
+          example: 60
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          example:
+            error: Too Many Requests
+            message: Too many requests. Please try again later.
+            code: RATE_LIMITED
+            retryAfter: 60
+    500_InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiErrorResponse"
+          examples:
+            genericError:
+              summary: Unexpected error
+              value:
+                error: Internal Server Error
+                message: An unexpected error occurred
+                code: INTERNAL
+            databaseError:
+              summary: Database operation failed
+              value:
+                error: Internal Server Error
+                message: Failed to fetch integrations
+                code: DB_ERROR
+  parameters:
+    offsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of records to skip for pagination
+    limitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Maximum number of records to return (max 100)
+    pageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for pagination (1-based)
+    idPathParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Resource identifier (UUID)
+      example: 550e8400-e29b-41d4-a716-446655440000
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 255
+        pattern: ^[a-zA-Z0-9\-_.:=]+$
+      description: "Optional idempotency key (UUID, ULID, or SHA-256 hash
+        recommended). When provided, the server caches the response for a
+        route-specific TTL (default 5 minutes, up to 1 hour for
+        onboarding/integration routes). Duplicate requests with the same key
+        return the cached response with X-Idempotency-Replayed: true header.
+        Concurrent requests with the same key return 409 Conflict. Keys must be
+        alphanumeric plus hyphens, underscores, dots, colons, and equals signs;
+        invalid characters return 400."
+  headers:
+    X-Idempotency-Replayed:
+      description: Present and set to "true" when the response is a cached replay of a
+        previous idempotent request
+      schema:
+        type: string
+        enum:
+          - "true"
+    X-RateLimit-Limit:
+      description: Maximum number of requests allowed in the current window
+      schema:
+        type: integer
+    X-RateLimit-Remaining:
+      description: Number of requests remaining in the current window
+      schema:
+        type: integer
+    X-RateLimit-Reset:
+      description: Unix timestamp (ms) when the rate limit window resets
+      schema:
+        type: integer
+  examples: {}

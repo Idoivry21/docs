@@ -1,0 +1,38 @@
+---
+title: "Notion Integration Guide"
+description: "Connect Notion to ingest feedback pages and optionally enrich insight extraction with product context."
+icon: "book"
+---
+
+Connect Notion to sync feedback pages and product context docs.
+
+## Prerequisites
+
+- A Notion workspace with pages or databases containing customer feedback
+- Permission to authorize a Notion internal integration
+
+## Connect Notion
+
+<Steps>
+  <Step title="Start from Integrations">
+    Go to [Settings → Integrations](/settings) and choose Notion.
+  </Step>
+  <Step title="Authorize the workspace">
+    Complete OAuth and pick the Notion workspace to connect.
+  </Step>
+  <Step title="Choose sources and purpose">
+    Select pages/databases and set each source as feedback extraction or enrichment context.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+**Source mapping** — Field mapping keeps document structure consistent during ingestion.
+
+**Initial backfill** — Selected pages are imported after setup and normalized for extraction.
+
+**Incremental sync** — Changed pages are synced in scheduled polling runs.
+
+<Note>
+**Data access** — Hearflow reads only connected Notion sources and stores credentials encrypted with AES-256 at rest.
+</Note>

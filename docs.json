@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Hearflow",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0284C7",
+    "light": "#38BDF8",
+    "dark": "#075985"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -14,36 +14,42 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get started",
+            "pages": ["index", "getting-started"]
+          },
+          {
+            "group": "Meetings",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "integrations/zoom",
+              "integrations/google-meet",
+              "integrations/fireflies"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Messaging",
+            "pages": ["integrations/slack", "integrations/gmail"]
+          },
+          {
+            "group": "Productivity",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "integrations/notion",
+              "integrations/asana",
+              "integrations/clickup",
+              "integrations/hubspot"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Upload",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "integrations/google-sheets",
+              "integrations/tally",
+              "integrations/csv-upload",
+              "integrations/manual-upload"
             ]
           },
           {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
-            ]
+            "group": "Insights & Workspace",
+            "pages": ["insights", "settings", "team", "billing"]
           }
         ]
       },
@@ -51,37 +57,16 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "API documentation",
-            "pages": [
-              "api-reference/introduction"
-            ]
+            "group": "Overview",
+            "pages": ["api/overview", "api/authentication"]
           },
           {
-            "group": "Endpoint examples",
-            "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
-            ]
+            "group": "Endpoints",
+            "openapi": "api-reference/openapi.yaml"
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/light.svg",
@@ -91,32 +76,22 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "https://hearflow.io/support"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Sign in",
+      "href": "https://app.hearflow.io"
     }
   },
   "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+    "options": ["copy", "view", "chatgpt", "claude", "mcp"]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/hearflow",
+      "linkedin": "https://linkedin.com/company/hearflow"
     }
   }
 }

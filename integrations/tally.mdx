@@ -1,0 +1,38 @@
+---
+title: "Tally Integration Guide"
+description: "Connect Tally to Hearflow to ingest form submissions and turn open-text responses into product insights."
+icon: "clipboard-list"
+---
+
+Connect Tally to sync form submissions into Hearflow.
+
+## Prerequisites
+
+- A Tally workspace with forms that include customer feedback
+- A Tally API key with access to the forms you want to ingest
+
+## Connect Tally
+
+<Steps>
+  <Step title="Create an API key in Tally">
+    Open Tally settings, generate an API key, and copy it.
+  </Step>
+  <Step title="Open Hearflow integrations">
+    In Hearflow, go to [Settings → Integrations](/settings) and select Tally.
+  </Step>
+  <Step title="Save and select forms">
+    Paste your key, connect, and choose which forms should be synced.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+**Form responses** — Selected forms are converted into transcript-like records.
+
+**Initial backfill** — Historical responses are imported after setup completes.
+
+**Incremental sync** — New submissions are picked up in scheduled sync runs.
+
+<Note>
+**Data access** — Hearflow only reads form metadata and responses needed for insight extraction. Your credentials are encrypted at rest.
+</Note>

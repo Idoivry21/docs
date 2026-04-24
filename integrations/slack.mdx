@@ -1,0 +1,64 @@
+---
+title: "Slack"
+description: "Install the Hearflow Slack app and pick which channels to ingest as customer-feedback sources."
+icon: "slack"
+---
+
+Surface product feedback that lives in your internal Slack conversations.
+
+<Card title="Connect Slack" icon="plug" href="https://app.hearflow.io/settings/integrations">
+  Open Hearflow settings to install the Slack app.
+</Card>
+
+## Prerequisites
+
+- Workspace-admin permission to install a Slack app (or approval from an admin)
+- Public channels where customer-facing teams discuss product feedback
+
+## Connecting Slack
+
+<Steps>
+  <Step title="Start the install flow">
+    In Hearflow, open [Settings → Integrations](https://app.hearflow.io/settings) and click **Connect** on the Slack card.
+  </Step>
+  <Step title="Approve in Slack">
+    Slack prompts you to review the scopes Hearflow is requesting. Click **Allow** to finish the install. Admin approval may be required depending on your workspace policies.
+  </Step>
+  <Step title="Pick channels to ingest">
+    After install, use the channel picker to choose which public channels to ingest. Hearflow only reads messages from channels you explicitly select.
+  </Step>
+</Steps>
+
+## Channels & Message Handling
+
+<CardGroup cols={2}>
+  <Card title="Public channels only" icon="hashtag">
+    Hearflow will not ingest private channels or direct messages.
+  </Card>
+  <Card title="Threads preserved" icon="message">
+    When a thread is ingested, Hearflow preserves the parent message context so the extraction has enough signal.
+  </Card>
+</CardGroup>
+
+<Info>
+  **Least-privilege access** — The app uses read-only scopes and never posts messages, invites users, or modifies your workspace. Revoke access at any time from your Slack admin panel.
+</Info>
+
+## Disconnecting Slack
+
+<Steps>
+  <Step title="Disconnect in Hearflow">
+    Go to [Settings → Integrations](https://app.hearflow.io/settings) and click **Disconnect** next to Slack.
+  </Step>
+  <Step title="Remove from Slack">
+    In Slack, open **Apps → Manage Apps → Hearflow** and click **Remove** to delete the installation from your workspace.
+  </Step>
+</Steps>
+
+<Warning>
+  **What happens when you disconnect** — Channel syncing stops immediately. Insights already extracted remain in Hearflow.
+</Warning>
+
+## Need Help?
+
+Contact [support@hearflow.io](mailto:support@hearflow.io) and we'll help you get set up.

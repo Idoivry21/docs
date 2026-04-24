@@ -1,0 +1,42 @@
+---
+title: "HubSpot Integration Guide"
+description: "Connect HubSpot to enrich Hearflow insights with account and CRM context for prioritization."
+icon: "hubspot"
+---
+
+Sync CRM context so product feedback is tied to accounts, lifecycle stage, and revenue.
+
+<Note>
+HubSpot is a **CRM enrichment** integration — it does not ingest customer transcripts or feedback for extraction. Instead, it provides account, deal, and lifecycle context that Hearflow uses to prioritize and enrich insights surfaced from other sources.
+</Note>
+
+## Prerequisites
+
+- A HubSpot account with contacts, companies, and deals populated
+- Permission to install and authorize private app access via OAuth
+
+## Connect HubSpot
+
+<Steps>
+  <Step title="Open Hearflow integrations">
+    Go to [Settings → Integrations](/settings) and choose HubSpot.
+  </Step>
+  <Step title="Authorize with HubSpot OAuth">
+    Complete the consent flow and grant required CRM scopes.
+  </Step>
+  <Step title="Confirm initial sync">
+    Save setup and let Hearflow run the initial multi-step CRM sync.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+**CRM enrichment** — Account and deal context is synced for insight prioritization.
+
+**Initial backfill** — The first run imports historical CRM entities and associations.
+
+**Ongoing sync** — Scheduled runs keep records fresh for downstream enrichment.
+
+<Note>
+**Data access** — Hearflow syncs only authorized HubSpot CRM data and encrypts OAuth credentials at rest.
+</Note>

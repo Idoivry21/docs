@@ -1,0 +1,92 @@
+---
+title: "Fireflies"
+description: "Connect Fireflies.ai to Hearflow with an API key to automatically ingest meeting transcripts."
+icon: "fire"
+---
+
+Connect Fireflies.ai to pull meeting transcripts into Hearflow.
+
+<Card title="Connect Fireflies" icon="plug" href="https://app.hearflow.io/settings/integrations">
+  Open Hearflow settings to connect your Fireflies workspace.
+</Card>
+
+## Prerequisites
+
+- A Fireflies.ai account on a paid plan
+- Admin access to issue API keys for your workspace
+- Notetaker enabled on the calls you want to sync
+
+## Connecting Fireflies
+
+<Steps>
+  <Step title="Generate a Fireflies API key">
+    Log in to [Fireflies](https://app.fireflies.ai) and open **Settings → Developer Settings**. Click **Generate API Key** and copy the value to your clipboard.
+  </Step>
+  <Step title="Open Hearflow integrations">
+    In Hearflow, go to [Settings → Integrations](https://app.hearflow.io/settings) and select **Fireflies**.
+  </Step>
+  <Step title="Paste the key">
+    Paste your API key in the secure input and click **Connect**. Hearflow validates the key immediately and starts a backfill if it succeeds.
+  </Step>
+</Steps>
+
+<Info>
+  **Key handling** — Fireflies keys are encrypted at rest with AES-256. They are only decrypted inside the worker process that polls Fireflies and never exposed in the UI after saving.
+</Info>
+
+## How It Works
+
+<CardGroup cols={3}>
+  <Card title="Backfill" icon="clock">
+    Up to 90 days of completed meetings are pulled when you first connect.
+  </Card>
+  <Card title="Daily sync" icon="arrows-rotate">
+    New transcripts are polled every 24 hours and processed automatically.
+  </Card>
+  <Card title="Scope" icon="shield">
+    Hearflow reads transcripts only. Audio and video files are never downloaded.
+  </Card>
+</CardGroup>
+
+## Data Access & Privacy
+
+**What we access**
+
+- Meeting metadata (title, duration, participants, date)
+- Completed transcripts from meetings your workspace owns
+
+**What we do not access**
+
+- Audio or video recordings
+- Contacts, calendars, or CRM sync data
+- Meetings that belong to other Fireflies workspaces
+
+## Disconnecting Fireflies
+
+<Steps>
+  <Step title="In Hearflow">
+    Navigate to [Settings → Integrations](https://app.hearflow.io/settings) and click **Disconnect** next to Fireflies. This deletes the stored API key and stops all future syncs.
+  </Step>
+  <Step title="In Fireflies">
+    For full revocation, open Fireflies **Developer Settings** and delete the API key you generated for Hearflow.
+  </Step>
+</Steps>
+
+<Warning>
+  **What happens when you disconnect** — Syncing stops immediately. Insights already extracted remain in Hearflow. To delete them, contact [support@hearflow.io](mailto:support@hearflow.io).
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Invalid API key">
+    Regenerate the key in Fireflies Developer Settings and paste it back into Hearflow. Keys can be rotated without losing already-ingested transcripts.
+  </Accordion>
+  <Accordion title="Missing transcripts">
+    Fireflies only returns transcripts once transcription completes — usually within 15 minutes of the meeting ending. Try again if a recent call is not yet visible.
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+Contact [support@hearflow.io](mailto:support@hearflow.io) and we'll help you get set up.

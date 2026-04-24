@@ -1,0 +1,52 @@
+---
+title: "Gmail"
+description: "Connect Gmail to Hearflow to ingest customer email threads and extract product insights."
+icon: "envelope"
+---
+
+Sync customer email threads from Gmail into Hearflow.
+
+<Card title="Connect Gmail" icon="plug" href="https://app.hearflow.io/settings/integrations">
+  Open Hearflow settings to connect your Gmail account.
+</Card>
+
+## Prerequisites
+
+- A Google Workspace or Gmail account with customer conversations
+- Permission to authorize read access for mailbox metadata and message content
+
+## Connect Gmail
+
+<Steps>
+  <Step title="Open Hearflow integrations">
+    Navigate to [Settings → Integrations](https://app.hearflow.io/settings) and choose Gmail.
+  </Step>
+  <Step title="Authorize with Google OAuth">
+    Complete the Google consent flow and grant the required Gmail access scopes.
+  </Step>
+  <Step title="Select labels or filters">
+    Choose which mailbox segments should be included in sync.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+<CardGroup cols={3}>
+  <Card title="Thread ingestion" icon="envelope">
+    Threads are normalized into transcript-like records for analysis.
+  </Card>
+  <Card title="Backfill" icon="clock">
+    Recent historical threads are imported when setup is complete.
+  </Card>
+  <Card title="Incremental updates" icon="arrows-rotate">
+    New and updated threads are synced during scheduled runs.
+  </Card>
+</CardGroup>
+
+<Info>
+  **Data access** — Hearflow only reads messages needed for insight extraction and encrypts integration credentials at rest.
+</Info>
+
+## Need Help?
+
+Contact [support@hearflow.io](mailto:support@hearflow.io) and we'll help you get set up.

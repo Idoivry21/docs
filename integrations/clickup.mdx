@@ -1,0 +1,38 @@
+---
+title: "ClickUp Integration Guide"
+description: "Connect ClickUp to sync tasks and comments into Hearflow for product-feedback extraction."
+icon: "circle-check"
+---
+
+Sync ClickUp tasks and comments as structured product-feedback signals.
+
+## Prerequisites
+
+- A ClickUp workspace with tasks that include customer context
+- Permission to authorize ClickUp through OAuth
+
+## Connect ClickUp
+
+<Steps>
+  <Step title="Open Hearflow integrations">
+    Go to [Settings → Integrations](/settings) and select ClickUp.
+  </Step>
+  <Step title="Authorize OAuth access">
+    Complete the consent flow and grant required ClickUp scopes.
+  </Step>
+  <Step title="Choose workspace scope">
+    Select the relevant workspace or lists and save setup.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+**Task ingestion** — Tasks and comments are normalized into records for extraction.
+
+**Initial backfill** — Historical tasks are imported after setup is completed.
+
+**Ongoing sync** — New updates are captured in scheduled sync runs.
+
+<Note>
+**Data access** — Hearflow reads only authorized ClickUp data and stores OAuth credentials encrypted at rest.
+</Note>

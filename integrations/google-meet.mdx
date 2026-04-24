@@ -1,0 +1,88 @@
+---
+title: "Google Meet"
+description: "Connect Google Meet to Hearflow via OAuth to ingest Meet recordings from your Google Drive."
+icon: "google"
+---
+
+Pull Google Meet recordings and transcripts from your Google Drive into Hearflow.
+
+<Card title="Connect Google Meet" icon="plug" href="https://app.hearflow.io/settings/integrations">
+  Open Hearflow settings to connect your Google Workspace account.
+</Card>
+
+## Prerequisites
+
+- Google Workspace plan that supports Meet recordings (Business Standard or higher)
+- Meet recordings enabled in your admin console
+- Recording transcripts enabled in Meet settings
+
+## Connecting Google Meet
+
+<Steps>
+  <Step title="Open integrations">
+    In Hearflow, go to [Settings → Integrations](https://app.hearflow.io/settings) and click **Connect** on the Google Meet card.
+  </Step>
+  <Step title="Authorize with Google">
+    You will be redirected to Google's consent screen. Review the requested scopes and click **Allow**. Hearflow only requests scopes needed to list Meet recordings and read their transcript files from Drive.
+  </Step>
+  <Step title="Backfill begins automatically">
+    After consent, you will land back in Hearflow. The initial backfill covers up to 60 days of Meet recordings with transcripts.
+  </Step>
+</Steps>
+
+## How It Works
+
+<CardGroup cols={3}>
+  <Card title="Drive-based" icon="clock">
+    Meet recordings and transcripts are stored in your Drive — Hearflow reads them from there.
+  </Card>
+  <Card title="Daily sync" icon="arrows-rotate">
+    New recordings are picked up within 24 hours of the meeting ending.
+  </Card>
+  <Card title="Transcripts only" icon="shield">
+    The video file itself is never downloaded. Hearflow processes the transcript text.
+  </Card>
+</CardGroup>
+
+## Data Access & Privacy
+
+<Note>
+  **Scopes requested**
+  - `drive.meet.readonly` — list Meet recordings from your Drive
+  - `drive.file` — read transcripts of recordings created by Meet
+  - Basic profile (name, email) to identify the connection
+</Note>
+
+<Info>
+  **Your files stay in your Drive** — Hearflow only streams transcript text for processing. Your Drive files are not copied or moved. See the [Privacy Policy](https://hearflow.io/privacy) for details.
+</Info>
+
+## Disconnecting Google Meet
+
+<Steps>
+  <Step title="Disconnect in Hearflow">
+    Go to [Settings → Integrations](https://app.hearflow.io/settings) and click **Disconnect**. This revokes the stored refresh token.
+  </Step>
+  <Step title="Revoke at Google">
+    For a clean audit trail, open [myaccount.google.com/permissions](https://myaccount.google.com/permissions) and remove access for Hearflow.
+  </Step>
+</Steps>
+
+<Warning>
+  **What happens when you disconnect** — Hearflow stops polling your Drive immediately. Insights already extracted remain available in the dashboard.
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No recordings found">
+    Make sure recording and transcripts are enabled in your Google Workspace admin console. Meet only saves transcripts for meetings that opted into recording.
+  </Accordion>
+  <Accordion title="Permission error after connect">
+    Your admin may have restricted third-party app access. Ask them to allow Hearflow in the Workspace admin console, then reconnect.
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+Contact [support@hearflow.io](mailto:support@hearflow.io) and we'll help you get set up.

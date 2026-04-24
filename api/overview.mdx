@@ -1,0 +1,73 @@
+---
+title: "API Overview"
+description: "Build on top of Hearflow. The REST API exposes insights, integrations, uploads, and the Connector API for third-party apps."
+icon: "code"
+---
+
+Build on top of Hearflow. The REST API exposes insights, integrations, uploads, and the Connector API for third-party apps.
+
+## Base URLs
+
+| Environment | URL |
+| --- | --- |
+| Production | `https://app.hearflow.ai` |
+| Staging | `https://staging.hearflow.io` |
+
+All endpoints live under `/api/v1`. Versioning is baked into the URL path and breaking changes will ship under a new version prefix.
+
+## Conventions
+
+- **JSON everywhere.** Requests and responses use `application/json`.
+- **UTC timestamps.** All date fields are ISO 8601 with a `Z` suffix.
+- **Cursor pagination.** List endpoints use cursor-based pagination with `next_cursor` in the response envelope.
+- **Idempotency keys.** Mutating endpoints accept an `Idempotency-Key` header to safely retry on network errors.
+
+## Authentication modes
+
+<Tabs>
+  <Tab title="Session (Supabase Auth)">
+    Used by the Hearflow web app. Cookie-based, CSRF-protected, scoped to the currently signed-in user.
+  </Tab>
+  <Tab title="API Key">
+    Server-to-server. Create a key in [Settings](https://app.hearflow.io/settings/api-keys), pass it as `Authorization: Bearer hf_live_...`. Scoped to the issuing workspace.
+  </Tab>
+  <Tab title="OAuth 2.0 (Connector API)">
+    Third-party apps that act on behalf of a Hearflow user. Authorization code with PKCE, dynamic client registration, refresh tokens.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Read the full [Authentication guide](/api/authentication) for curl examples and step-by-step walkthroughs.
+</Tip>
+
+## Rate limits
+
+Hearflow applies two layers of limits: a per-workspace budget (RPM and burst) enforced at the edge, and endpoint-specific limits for expensive operations.
+
+- **Default:** 300 requests/min per workspace, burst of 60.
+- **List endpoints:** Cursor-paginated, max page size of 100.
+- **Uploads:** 10 concurrent CSV uploads per workspace.
+
+Responses include `X-RateLimit-*` headers. A 429 response always includes a `Retry-After` hint.
+
+## Connector API
+
+Endpoints under `/api/v1/connect/*` are the surface area third-party apps use to act on a user's behalf:
+
+- Insights read & search
+- Product-area metadata
+- Integration status
+- Webhooks (subscribing to new insights)
+
+Scopes are granular: an app can request read-only access to insights without getting anywhere near billing or team management.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    API keys and OAuth 2.0 walkthroughs with curl examples.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Interactive OpenAPI-powered reference. Try requests without leaving the page.
+  </Card>
+</CardGroup>

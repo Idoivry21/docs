@@ -1,0 +1,61 @@
+---
+title: "CSV Upload Guide"
+description: "Upload CSV files of customer feedback to Hearflow for one-off imports or recurring batch analysis."
+icon: "file-csv"
+---
+
+Import feedback as a file — no OAuth, no API key required.
+
+## File format
+
+| Property | Value |
+| --- | --- |
+| **Encoding** | UTF-8 |
+| **Delimiter** | comma (auto-detected), semicolon, or tab |
+| **Header row** | required |
+| **Size limit** | 50 MB per file |
+| **Required columns** | a free-text feedback column |
+| **Optional columns** | timestamp, customer id or email, source / channel label |
+
+## Upload flow
+
+<Steps>
+  <Step title="Open CSV Upload">
+    Go to [Settings → Integrations](/settings) and click **Upload** on the CSV Upload card.
+  </Step>
+  <Step title="Drag in your file">
+    Drag-and-drop or select a CSV from your computer. Hearflow validates the encoding and header row client-side before starting the upload.
+  </Step>
+  <Step title="Map columns">
+    Pick which column contains the feedback text. Optionally map timestamp, customer, and source columns. Preview rows are shown during mapping.
+  </Step>
+  <Step title="Confirm and process">
+    Click **Import**. Hearflow queues the rows for AI extraction — you can close the tab and come back later.
+  </Step>
+</Steps>
+
+## How It Works
+
+**Queued processing** — Rows are processed in batches by background workers. No user action needed after upload.
+
+**Processing time** — Expect 1–5 minutes per thousand rows, depending on row length and AI budget.
+
+**Re-upload safely** — Hearflow deduplicates rows with identical content, so re-uploads will not create duplicate insights.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title={'"Could not parse file"'}>
+    Open the file in a text editor and confirm it starts with a header row. Save as UTF-8 if exporting from Excel — the default codepage often trips up parsing.
+  </Accordion>
+  <Accordion title={'"No feedback column detected"'}>
+    Make sure one column contains sentence-length text (roughly 20 characters or more). Tiny labels such as ratings or NPS scores are not enough on their own.
+  </Accordion>
+  <Accordion title="Upload stuck at 100%">
+    The upload completed; processing continues in the background. The Imports tab shows progress and any rows that failed validation.
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**Files larger than 50 MB** — Split the file into chunks or use a spreadsheet integration instead. Contact support if you have an ongoing need to ingest very large CSV batches.
+</Warning>

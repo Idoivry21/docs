@@ -1,0 +1,55 @@
+---
+title: "Google Sheets Integration Guide"
+description: "Connect a Google Sheet to Hearflow, map columns to feedback fields, and sync incrementally."
+icon: "table"
+---
+
+Connect a spreadsheet of feedback and keep it in sync with Hearflow.
+
+## Prerequisites
+
+- A Google account with access to the spreadsheet you want to sync
+- At least one column containing free-text feedback (typically 20+ characters per row)
+- Header row in the first row of the sheet
+
+## Connecting Google Sheets
+
+<Steps>
+  <Step title="Authorize with Google">
+    In Hearflow go to [Settings → Integrations](/settings) and click **Connect** on Google Sheets. Sign in and approve the read-only Drive & Sheets scopes.
+  </Step>
+  <Step title="Pick a spreadsheet">
+    Use the Google Picker to choose a specific spreadsheet. Hearflow only gains access to the files you explicitly select.
+  </Step>
+  <Step title="Select the sheet tab">
+    Choose which tab within the spreadsheet contains your feedback. One tab per connected source.
+  </Step>
+  <Step title="Map columns">
+    Map each relevant column to a Hearflow field. See [Column mapping](#column-mapping) below for details.
+  </Step>
+</Steps>
+
+## Column Mapping
+
+| Field | Required | Description |
+| --- | --- | --- |
+| **Feedback text** | Required | The free-text column that contains the actual customer quote or comment. |
+| **Timestamp** | Optional | A date column used to preserve chronology in the Insights dashboard. |
+| **Customer identifier** | Optional | Email, company, or user ID used to attribute insights to a specific customer. |
+| **Source / channel** | Optional | A free-text column used to tag insights with their origin (e.g. "NPS survey", "support ticket"). |
+
+## How It Works
+
+**Incremental sync** — New rows are detected on each sync. Already-processed rows are skipped.
+
+**Schema-aware** — If you add columns, re-map them from Integration Settings — existing mappings keep working.
+
+**Read-only** — Hearflow never writes to your spreadsheet.
+
+## Disconnecting
+
+Remove the connection from [Settings → Integrations](/settings). For a full revocation, also remove Hearflow's access at [myaccount.google.com/permissions](https://myaccount.google.com/permissions).
+
+<Warning>
+**Disconnecting does not delete data** — Rows that were already ingested remain available as insights. Contact support to remove them.
+</Warning>

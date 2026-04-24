@@ -1,0 +1,51 @@
+---
+title: "Team & Roles"
+description: "Invite teammates, assign roles, manage pending invitations, and transfer workspace ownership."
+icon: "user-group"
+---
+
+Everything about adding people to your workspace and controlling what they can change.
+
+## Inviting teammates
+
+<Steps>
+  <Step title="Open Team settings">
+    Go to [Settings → Team](https://app.hearflow.io/settings/team). You'll see a list of active members and pending invitations.
+  </Step>
+  <Step title="Enter emails">
+    Paste one or more email addresses (comma- or newline-separated) and pick a role for each. Invitations are sent immediately.
+  </Step>
+  <Step title="Invitation expiry">
+    Invites expire after 14 days. Expired invites can be resent in a single click without creating a new one.
+  </Step>
+</Steps>
+
+## Roles
+
+<CardGroup cols={1}>
+  <Card title="Owner" icon="crown">
+    Full control over the workspace, including billing and deletion. Every workspace has exactly one owner at a time.
+  </Card>
+  <Card title="Admin" icon="shield-check">
+    Can manage integrations, invite members, and change workspace settings. Cannot change billing or transfer ownership.
+  </Card>
+  <Card title="Member" icon="users">
+    Read and interact with insights. Cannot change integrations, settings, or billing.
+  </Card>
+</CardGroup>
+
+## Managing invitations
+
+- **Resend** — Click resend on any pending invite to deliver a fresh copy of the email.
+- **Revoke** — Delete a pending invite to invalidate the link. The invitee can no longer join with it.
+- **Remove members** — Admins and owners can remove active members. Removed members immediately lose access.
+
+## Transferring ownership
+
+<Warning>
+  **Transfer before removing the current owner** — Ownership can be transferred to any existing admin. The previous owner is demoted to admin. Transfer happens immediately and cannot be undone without a reverse transfer.
+</Warning>
+
+<Note>
+  Need help? Email [support@hearflow.io](mailto:support@hearflow.io) or visit our [support page](/support).
+</Note>

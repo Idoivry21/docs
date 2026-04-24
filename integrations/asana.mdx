@@ -1,0 +1,38 @@
+---
+title: "Asana Integration Guide"
+description: "Connect Asana to sync tasks and comments into Hearflow for product-feedback extraction."
+icon: "list-check"
+---
+
+Sync Asana tasks and comments as structured feedback signals.
+
+## Prerequisites
+
+- An Asana workspace and project with customer-facing feedback
+- Permission to authorize Asana via OAuth
+
+## Connect Asana
+
+<Steps>
+  <Step title="Open Integrations in Hearflow">
+    Go to [Settings → Integrations](/settings) and select Asana.
+  </Step>
+  <Step title="Complete OAuth authorization">
+    Grant access to your Asana workspace in the consent flow.
+  </Step>
+  <Step title="Choose projects and scope">
+    Select which projects to sync and confirm setup.
+  </Step>
+</Steps>
+
+## How Sync Works
+
+**Task ingestion** — Tasks and comments are combined into transcript-like records.
+
+**Backfill** — Historical project activity is imported after configuration.
+
+**Ongoing sync** — New task changes are captured in scheduled sync runs.
+
+<Note>
+**Data access** — Hearflow reads only authorized projects and stores OAuth credentials encrypted at rest.
+</Note>

@@ -1,0 +1,133 @@
+---
+title: "API Authentication"
+description: "How to authenticate against the Hearflow REST API: workspace API keys and OAuth 2.0 with PKCE."
+icon: "key"
+---
+
+Two authoritative ways to authenticate: API keys for your own integrations, and OAuth 2.0 for third-party apps that act on behalf of a Hearflow user.
+
+## API keys
+
+### When to use
+
+Use API keys for server-to-server calls originating from your own infrastructure. Every key belongs to a single workspace and inherits that workspace's permissions.
+
+### Create a key
+
+<Steps>
+  <Step title="Sign in">
+    Sign in to Hearflow as an admin or owner.
+  </Step>
+  <Step title="Open API Keys">
+    Open [Settings → API Keys](https://app.hearflow.io/settings/api-keys).
+  </Step>
+  <Step title="Generate">
+    Click **New key**, name it, and copy the secret shown once.
+  </Step>
+</Steps>
+
+Keys look like `hf_live_XXXXXXXXXXXXXXXX`. You can revoke a key from the same page — it stops working within a few seconds.
+
+### Example request
+
+```bash
+curl https://app.hearflow.ai/api/v1/insights \
+  -H "Authorization: Bearer hf_live_XXXXXXXXXXXXXXXX" \
+  -H "Accept: application/json"
+```
+
+<Info>
+  **Rotation guidance.** Rotate keys at least once a year and whenever a secret may have been exposed. Create the replacement, update your deployment, and revoke the old key — there is no downtime because both keys work until you revoke.
+</Info>
+
+<Warning>
+  **Never log tokens.** Do not log request or response headers that include bearer tokens. Use your logger's redaction features or filter `Authorization` on the way in.
+</Warning>
+
+## OAuth 2.0 (Connector API)
+
+Third-party apps use OAuth to act on behalf of a Hearflow user without ever holding their password. The flow follows RFC 6749 authorization code with PKCE (RFC 7636) and supports dynamic client registration (RFC 7591).
+
+### 1. Register a client
+
+```bash
+curl -X POST https://app.hearflow.ai/api/v1/oauth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_name": "My App",
+    "redirect_uris": ["https://myapp.example.com/callback"],
+    "grant_types": ["authorization_code", "refresh_token"],
+    "token_endpoint_auth_method": "none"
+  }'
+```
+
+The response contains a `client_id`. Public clients (SPAs, mobile apps) use PKCE instead of a client secret.
+
+### 2. Redirect the user to authorize
+
+```
+https://app.hearflow.ai/oauth/authorize?
+  response_type=code&
+  client_id=CLIENT_ID&
+  redirect_uri=https%3A%2F%2Fmyapp.example.com%2Fcallback&
+  scope=insights:read&
+  state=RANDOM_STATE&
+  code_challenge=BASE64URL_SHA256&
+  code_challenge_method=S256
+```
+
+After consent, the user is redirected back with `?code=...&state=...`. Verify `state` matches what you sent.
+
+### 3. Exchange code for tokens
+
+```bash
+curl -X POST https://app.hearflow.ai/api/v1/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code" \
+  -d "code=AUTH_CODE" \
+  -d "redirect_uri=https://myapp.example.com/callback" \
+  -d "client_id=CLIENT_ID" \
+  -d "code_verifier=PKCE_VERIFIER"
+```
+
+Response contains `access_token`, `refresh_token`, `expires_in`, and granted `scope`.
+
+### 4. Call the API
+
+```typescript
+fetch("https://app.hearflow.ai/api/v1/connect/insights", {
+  headers: { Authorization: `Bearer ${accessToken}` },
+})
+```
+
+### 5. Refresh
+
+```bash
+curl -X POST https://app.hearflow.ai/api/v1/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=refresh_token" \
+  -d "refresh_token=REFRESH_TOKEN" \
+  -d "client_id=CLIENT_ID"
+```
+
+### 6. Revoke
+
+```bash
+curl -X POST https://app.hearflow.ai/api/v1/oauth/revoke \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "token=REFRESH_TOKEN" \
+  -d "client_id=CLIENT_ID"
+```
+
+<Info>
+  **Store tokens encrypted at rest.** Encrypt refresh tokens at rest (AES-256 or equivalent) and keep the encryption key in your secret manager. Access tokens are short-lived and do not need to be persisted for long.
+</Info>
+
+### Scopes
+
+| Scope | Purpose |
+| --- | --- |
+| `insights:read` | Read and search insights. |
+| `integrations:read` | List connected integrations and their status. |
+| `product_areas:read` | Read the workspace's product-area taxonomy. |
+| `webhooks:write` | Subscribe to insight events. |
