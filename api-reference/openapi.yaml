@@ -783,7 +783,14 @@ paths:
                               results)
                           categoryCounts:
                             type: object
-                            description: Count of active insights per category
+                            description: >
+                              Count of insights per category for the
+                              authenticated company. Includes all non-merged
+                              insights regardless of `workflow_status` — `done`
+                              insights are counted alongside `backlog`,
+                              `to_do`, and `in_progress`. Computed via the
+                              `get_category_counts` RPC and cached server-side
+                              for up to 5 minutes.
                             additionalProperties:
                               type: integer
                             example:
