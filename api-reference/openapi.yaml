@@ -779,18 +779,12 @@ paths:
                           nextCursor:
                             type: string
                             nullable: true
-                            description: Opaque cursor for next page (cursor mode only, null if no more
+                            description:
+                              Opaque cursor for next page (cursor mode only, null if no more
                               results)
                           categoryCounts:
                             type: object
-                            description: >
-                              Count of insights per category for the
-                              authenticated company. Includes all non-merged
-                              insights regardless of `workflow_status` — `done`
-                              insights are counted alongside `backlog`,
-                              `to_do`, and `in_progress`. Computed via the
-                              `get_category_counts` RPC and cached server-side
-                              for up to 5 minutes.
+                            description: Count of active insights per category
                             additionalProperties:
                               type: integer
                             example:
