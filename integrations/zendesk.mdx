@@ -1,0 +1,59 @@
+---
+title: "Zendesk Integration Guide"
+description: "Connect Zendesk to sync support tickets into Hearflow for product-feedback extraction."
+icon: "headset"
+---
+
+Sync Zendesk support tickets so customer issues, requests, and themes flow into Hearflow alongside other feedback signals.
+
+## Prerequisites
+
+- A Zendesk account on a paid plan with API access enabled
+- Permission to authorize Zendesk through OAuth, or generate an API token
+- Your Zendesk subdomain (for example, `acme` from `acme.zendesk.com`)
+
+## Connect Zendesk
+
+<Steps>
+  <Step title="Open Hearflow integrations">
+    Go to [Settings → Integrations](/settings) and select Zendesk.
+  </Step>
+  <Step title="Enter your subdomain">
+    Provide your Zendesk subdomain. Hearflow validates it before continuing.
+  </Step>
+  <Step title="Authorize access">
+    Complete the OAuth consent flow, or use the API-token fallback by supplying your subdomain, agent email, and an API token.
+  </Step>
+  <Step title="Confirm initial backfill">
+    Hearflow queues a 90-day backfill of historical tickets immediately after setup.
+  </Step>
+</Steps>
+
+## Authentication options
+
+**OAuth 2.0 (recommended)** — Authorizes per-subdomain access with automatic token refresh.
+
+**API token** — Subdomain, agent email, and an API token. Credentials are validated against `/api/v2/users/me.json` before storage.
+
+Credentials are encrypted at rest in both modes.
+
+## How sync works
+
+**Ticket ingestion** — Public ticket comments are synthesized into transcript-like records and fed through the standard extraction and deduplication pipeline. Internal notes are excluded.
+
+**Initial backfill** — A 90-day backfill of historical tickets runs immediately after the integration is connected.
+
+**Ongoing sync** — A scheduled task polls active Zendesk integrations weekly (Sundays at 04:00 UTC) for new ticket activity.
+
+**Filters** — Tag and group filters (`zendesk_include_tags`, `zendesk_exclude_tags`, `zendesk_include_group_ids`) are honoured by the sync task when configured.
+
+## Reliability
+
+- OAuth tokens refresh automatically before expiry.
+- Rate-limit (429) and transient server (5xx) errors are retried with exponential backoff.
+- Invalid subdomains are surfaced before the OAuth redirect.
+- Credential failures mark the integration as errored and prompt re-authentication.
+
+<Note>
+**Data access** — Hearflow reads only public ticket comments from authorized Zendesk subdomains and stores credentials encrypted at rest. Internal notes are never ingested.
+</Note>

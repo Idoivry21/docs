@@ -34,7 +34,8 @@
               "integrations/notion",
               "integrations/asana",
               "integrations/clickup",
-              "integrations/hubspot"
+              "integrations/hubspot",
+              "integrations/zendesk"
             ]
           },
           {
