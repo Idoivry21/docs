@@ -994,6 +994,60 @@ paths:
                         source:
                           type: object
                           nullable: true
+                          description: >
+                            Origin of this evidence item. Includes a
+                            clickable `url` back to the source ticket or
+                            page when the provider exposes one (HubSpot
+                            tickets, Zendesk tickets, Notion pages). Calls,
+                            transcripts, form submissions, sheet rows, and
+                            CSV uploads have no per-record deep link and
+                            return `url: null`.
+                          properties:
+                            type:
+                              type: string
+                              enum:
+                                - call
+                                - form
+                                - sheet
+                                - csv
+                              description: Source record type.
+                            provider:
+                              type: string
+                              description: >
+                                Provider that supplied the source record
+                                (for example `zendesk`, `hubspot`,
+                                `notion`, `fireflies`, `zoom`, `tally`,
+                                `google_sheets`, `csv_upload`).
+                            label:
+                              type: string
+                              description: >
+                                Human-readable label for the source (call
+                                title, form name, sheet name, or CSV
+                                filename).
+                            date:
+                              type: string
+                              format: date-time
+                              nullable: true
+                              description: Timestamp of the source record.
+                            linkId:
+                              type: string
+                              format: uuid
+                              nullable: true
+                              description: >
+                                Internal identifier of the linked source
+                                record.
+                            url:
+                              type: string
+                              format: uri
+                              nullable: true
+                              description: >
+                                Clickable HTTPS URL back to the source
+                                ticket or page in the provider UI. Only
+                                populated for HubSpot tickets, Zendesk
+                                tickets, and Notion pages. Always `null`
+                                for calls, transcripts, forms, sheets, and
+                                CSV uploads. Non-HTTPS URLs are filtered
+                                out at the API boundary.
                   hasMore:
                     type: boolean
                   total:
