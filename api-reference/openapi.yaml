@@ -1537,6 +1537,172 @@ paths:
           $ref: "#/components/responses/429_RateLimited"
         "500":
           $ref: "#/components/responses/500_InternalError"
+  /v1/insights/ask:
+    post:
+      tags:
+        - Insights
+      operationId: askInsights
+      summary: Ask a natural-language question about your insights
+      description: >
+        Ask a natural-language question about the authenticated company's
+        product feedback. The endpoint runs retrieval-augmented generation
+        (RAG) over your insights and evidence and streams a grounded answer
+        as plain text.
+
+
+        **Authentication:**
+
+        - API key (`Authorization: Bearer hf_live_...`) or session cookie
+
+        - Browser callers must also send the `x-csrf-token` header
+
+
+        **Onboarding guidance (no quota consumed):**
+
+        Before running RAG, the endpoint checks whether the company has any
+        connected integrations and a sufficiently filled company context
+        (industry plus a non-trivial company description). When neither is
+        present, the endpoint short-circuits and returns a JSON guidance
+        response with HTTP 200 — directing the user to add company context
+        and connect a data source — and does **not** consume a slot from the
+        monthly Q&A quota.
+
+
+        If the readiness check itself errors (for example, a transient
+        database error), the endpoint fails open and proceeds with RAG so
+        users with existing data are not blocked.
+
+
+        **Empty corpus:**
+
+        If RAG retrieves no evidence and no insights are available to
+        summarise, the endpoint returns a JSON message asking the user to
+        rephrase or process more data, and the reserved Q&A slot is released.
+
+
+        **Quota:**
+
+        Successful answer generation consumes one slot from the company's
+        tier-based monthly Q&A quota. When the quota is exhausted, the
+        endpoint returns `429 Too Many Requests`.
+
+
+        **Response shape:**
+
+        - `text/event-stream` (or `text/plain`) — streamed plain-text answer
+        when RAG produces a grounded response.
+
+        - `application/json` — `{ "data": { "answer": "..." } }` for the
+        onboarding-guidance and empty-corpus cases.
+      security:
+        - bearerAuth: []
+        - sessionAuth: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - question
+              properties:
+                question:
+                  type: string
+                  minLength: 3
+                  maxLength: 500
+                  description: >
+                    Natural-language question to ask about your insights.
+                    Trimmed and sanitized server-side.
+                  example: What are the top pain points reported by enterprise customers?
+                conversationHistory:
+                  type: array
+                  maxItems: 10
+                  description: >
+                    Optional prior turns in the conversation, ordered oldest
+                    to newest. Used to provide context for follow-up
+                    questions.
+                  items:
+                    type: object
+                    required:
+                      - role
+                      - content
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                          - user
+                          - assistant
+                      content:
+                        type: string
+                        minLength: 1
+                        maxLength: 5000
+      responses:
+        "200":
+          description: >
+            Successful response. A streamed plain-text answer when RAG
+            produces a grounded response, or a JSON envelope with an
+            `answer` string for the onboarding-guidance and empty-corpus
+            cases.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Streamed plain-text answer tokens.
+            text/plain:
+              schema:
+                type: string
+                description: Streamed plain-text answer tokens.
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required:
+                          - answer
+                        properties:
+                          answer:
+                            type: string
+                            description: >
+                              Guidance message returned when the company has
+                              not connected any data sources and has not
+                              saved a sufficient company context, or when no
+                              relevant evidence and no insights are
+                              available to answer the question.
+              examples:
+                onboardingGuidance:
+                  summary: No integrations and no company context
+                  value:
+                    data:
+                      answer: >-
+                        Please connect your data sources and add your
+                        company context before asking questions. Head to
+                        Settings to add company context, and to Integrations
+                        to connect a data source — once those are in place I
+                        can answer questions grounded in your customer
+                        feedback.
+                noEvidence:
+                  summary: No relevant evidence available
+                  value:
+                    data:
+                      answer: >-
+                        I couldn't find relevant evidence in your product
+                        feedback to answer this question. Try rephrasing
+                        your question, or ensure you have processed some
+                        calls or form submissions first.
+        "400":
+          $ref: "#/components/responses/400_BadRequest"
+        "401":
+          $ref: "#/components/responses/401_Unauthorized"
+        "402":
+          $ref: "#/components/responses/402_PaymentRequired"
+        "429":
+          $ref: "#/components/responses/429_RateLimited"
+        "500":
+          $ref: "#/components/responses/500_InternalError"
   /v1/product-areas:
     get:
       tags:
