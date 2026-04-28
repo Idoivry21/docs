@@ -128,21 +128,20 @@ paths:
       operationId: oauthAuthorize
       summary: OAuth Authorization endpoint (RFC 6749)
       description: >
-        Initiates the OAuth 2.1 authorization code flow. Requires an active
-        Hearflow
-
-        session. Validates client and redirect_uri, then redirects to the
-        consent page.
+        Initiates the OAuth 2.1 authorization code flow. Public endpoint —
+        callable without an existing Hearflow session.
 
 
-        If the user is not authenticated, redirects to `/login` with a return
-        URL.
+        Validates `client_id` and `redirect_uri`, then either renders the
+        consent page (when the user already has an active session) or
+        redirects unauthenticated browsers to `/login?redirect=...` so the
+        OAuth flow can resume after sign-in. This is the standard entry point
+        for first-time MCP clients.
 
 
         **PKCE required** — `code_challenge` and `code_challenge_method=S256`
         are mandatory.
-      security:
-        - sessionAuth: []
+      security: []
       parameters:
         - name: response_type
           in: query
@@ -303,9 +302,17 @@ paths:
                 logo_uri:
                   type: string
                   format: uri
+                  description: |
+                    Public URL of the client's logo, displayed on the consent
+                    page. Must use `https://` (or `http://localhost` for local
+                    development). `http://` and `data:` URIs are rejected.
                 client_uri:
                   type: string
                   format: uri
+                  description: |
+                    Homepage URL for the client application. Must use
+                    `https://` (or `http://localhost` for local development).
+                    `http://` and `data:` URIs are rejected.
       responses:
         "201":
           description: Client registered (RFC 7591 format)
