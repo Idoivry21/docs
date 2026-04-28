@@ -21,7 +21,8 @@
             "pages": [
               "integrations/zoom",
               "integrations/google-meet",
-              "integrations/fireflies"
+              "integrations/fireflies",
+              "integrations/granola"
             ]
           },
           {

@@ -1,0 +1,102 @@
+---
+title: "Granola"
+description: "Connect Granola to Hearflow with an API key to automatically ingest AI meeting notes and transcripts."
+icon: "note-sticky"
+---
+
+Connect Granola to pull AI-generated meeting notes, summaries, and transcripts into Hearflow.
+
+<Card title="Connect Granola" icon="plug" href="https://hearflow.io/settings/integrations">
+  Open Hearflow settings to connect your Granola workspace.
+</Card>
+
+## Prerequisites
+
+- A Granola account with the desktop app installed
+- A Granola API key (created from the desktop app)
+
+## Connecting Granola
+
+<Steps>
+  <Step title="Generate a Granola API key">
+    Open the **Granola desktop app**, go to **Settings → API**, click **Create new key**, and copy the value to your clipboard. Granola API keys start with `grn_`.
+  </Step>
+  <Step title="Open Hearflow integrations">
+    In Hearflow, go to [Settings → Integrations](https://hearflow.io/settings) and select **Granola**.
+  </Step>
+  <Step title="Paste the key">
+    Paste your API key in the secure input and click **Connect**. Hearflow validates the key immediately and starts a backfill if it succeeds.
+  </Step>
+</Steps>
+
+<Info>
+  **Key handling** — Granola keys are encrypted at rest with AES-256. They are only decrypted inside the worker process that polls Granola and never exposed in the UI after saving.
+</Info>
+
+## How it works
+
+<CardGroup cols={3}>
+  <Card title="Backfill" icon="clock">
+    Recent Granola notes are pulled when you first connect, including their summaries and transcripts.
+  </Card>
+  <Card title="Incremental sync" icon="arrows-rotate">
+    New notes are polled on a schedule and processed automatically as they are created.
+  </Card>
+  <Card title="Scope" icon="shield">
+    Hearflow reads notes, summaries, and transcripts only. Audio recordings are never downloaded.
+  </Card>
+</CardGroup>
+
+## Data access and privacy
+
+**What we access**
+
+- Note metadata (title, owner, created and updated timestamps, web URL)
+- AI-generated summaries
+- Speaker-labeled meeting transcripts
+- Calendar event details linked to the note (invitees, organizer, attendees)
+- Folder membership for the note
+
+**What we do not access**
+
+- Audio recordings
+- Notes that belong to other Granola workspaces
+
+## Rate limits
+
+Hearflow respects Granola's published rate limits and stays well under them by default:
+
+- **Burst**: up to 25 requests per 5 seconds
+- **Sustained**: up to 5 requests per second per workspace
+
+If you hit a rate limit, Hearflow automatically retries with backoff.
+
+## Disconnecting Granola
+
+<Steps>
+  <Step title="In Hearflow">
+    Navigate to [Settings → Integrations](https://hearflow.io/settings) and click **Disconnect** next to Granola. This deletes the stored API key and stops all future syncs.
+  </Step>
+  <Step title="In Granola">
+    For full revocation, open the Granola desktop app's **Settings → API** and delete the key you generated for Hearflow.
+  </Step>
+</Steps>
+
+<Warning>
+  **What happens when you disconnect** — Syncing stops immediately. Insights already extracted remain in Hearflow. To delete them, contact [support@hearflow.io](mailto:support@hearflow.io).
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Invalid API key">
+    Make sure the key you pasted starts with `grn_`. If it does, regenerate the key in the Granola desktop app under **Settings → API** and paste the new value into Hearflow. Keys can be rotated without losing already-ingested notes.
+  </Accordion>
+  <Accordion title="Missing notes or transcripts">
+    Granola only returns transcripts after a meeting note has been finalized. If a recent meeting is not yet visible, wait a few minutes and try again.
+  </Accordion>
+</AccordionGroup>
+
+## Need help?
+
+Contact [support@hearflow.io](mailto:support@hearflow.io) and we'll help you get set up.

@@ -1016,8 +1016,8 @@ paths:
                               description: >
                                 Provider that supplied the source record
                                 (for example `zendesk`, `hubspot`,
-                                `notion`, `fireflies`, `zoom`, `tally`,
-                                `google_sheets`, `csv_upload`).
+                                 `notion`, `fireflies`, `granola`, `zoom`,
+                                `tally`, `google_sheets`, `csv_upload`).
                             label:
                               type: string
                               description: >
@@ -2501,6 +2501,7 @@ components:
       type: string
       enum:
         - fireflies
+        - granola
         - zoom
         - tally
         - google_sheets
@@ -2516,6 +2517,7 @@ components:
       description: |
         Integration provider type:
         - `fireflies`: Fireflies.ai transcript provider
+        - `granola`: Granola AI meeting notes provider
         - `zoom`: Zoom cloud recording transcript provider
         - `tally`: Tally form submission provider
         - `google_sheets`: Google Sheets data source provider
@@ -2776,6 +2778,25 @@ components:
       example:
         provider: fireflies
         apiKey: ff_live_abc123xyz...
+    GranolaCredentials:
+      type: object
+      required:
+        - provider
+        - apiKey
+      properties:
+        provider:
+          type: string
+          enum:
+            - granola
+        apiKey:
+          type: string
+          minLength: 1
+          pattern: "^grn_[A-Za-z0-9_-]{10,}$"
+          description: Granola API key (starts with `grn_`). Created from the
+            Granola desktop app under Settings → API.
+      example:
+        provider: granola
+        apiKey: grn_abc123xyz456...
     ZoomCredentials:
       type: object
       required:
@@ -2854,12 +2875,14 @@ components:
     CreateIntegrationRequest:
       oneOf:
         - $ref: "#/components/schemas/FirefliesCredentials"
+        - $ref: "#/components/schemas/GranolaCredentials"
         - $ref: "#/components/schemas/ZoomCredentials"
         - $ref: "#/components/schemas/TallyCredentials"
       discriminator:
         propertyName: provider
         mapping:
           fireflies: "#/components/schemas/FirefliesCredentials"
+          granola: "#/components/schemas/GranolaCredentials"
           zoom: "#/components/schemas/ZoomCredentials"
           tally: "#/components/schemas/TallyCredentials"
     InsightCategory:
