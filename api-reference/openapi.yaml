@@ -3445,7 +3445,7 @@ components:
               summary: CSRF token validation failed
               value:
                 error: Forbidden
-                message: CSRF token invalid or missing
+                message: CSRF validation failed
                 code: CSRF_INVALID
             insufficientPermissions:
               summary: User lacks required permissions
