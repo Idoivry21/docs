@@ -1024,7 +1024,8 @@ paths:
                                 Provider that supplied the source record
                                 (for example `zendesk`, `hubspot`,
                                  `notion`, `fireflies`, `granola`, `zoom`,
-                                `tally`, `google_sheets`, `csv_upload`).
+                                `fathom`, `tally`, `google_sheets`,
+                                `csv_upload`).
                             label:
                               type: string
                               description: >
@@ -2367,7 +2368,7 @@ components:
             - csv
         source_type:
           type: string
-          description: Provider name (fireflies, zoom, tally, google_sheets)
+          description: Provider name (fireflies, zoom, fathom, tally, google_sheets)
         text:
           type: string
           description: Evidence quote or content
@@ -2440,6 +2441,9 @@ components:
         has_zoom:
           type: boolean
           description: Whether company has active Zoom integration
+        has_fathom:
+          type: boolean
+          description: Whether company has active Fathom integration
         has_tally:
           type: boolean
           description: Whether company has active Tally integration
@@ -2676,6 +2680,7 @@ components:
         - fireflies
         - granola
         - zoom
+        - fathom
         - tally
         - google_sheets
         - google_meet
@@ -2692,6 +2697,7 @@ components:
         - `fireflies`: Fireflies.ai transcript provider
         - `granola`: Granola AI meeting notes provider
         - `zoom`: Zoom cloud recording transcript provider
+        - `fathom`: Fathom meeting recording transcript provider
         - `tally`: Tally form submission provider
         - `google_sheets`: Google Sheets data source provider
         - `google_meet`: Google Meet transcript provider

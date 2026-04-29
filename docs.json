@@ -22,7 +22,8 @@
               "integrations/zoom",
               "integrations/google-meet",
               "integrations/fireflies",
-              "integrations/granola"
+              "integrations/granola",
+              "integrations/fathom"
             ]
           },
           {

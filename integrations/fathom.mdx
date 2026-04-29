@@ -1,0 +1,143 @@
+---
+title: "Fathom"
+description: "Connect your Fathom account to automatically extract insights from meeting transcripts."
+icon: "video"
+---
+
+The Fathom integration lets Hearflow access your Fathom meeting recordings and their transcripts. We automatically analyze each transcript to surface product insights, feature requests, pain points, and other feedback from your customer conversations.
+
+<CardGroup cols={3}>
+  <Card title="One-click setup" icon="clock">
+    Connect with secure OAuth — no API keys to manage.
+  </Card>
+  <Card title="Automatic sync" icon="arrows-rotate">
+    New meetings are pulled in and processed every day.
+  </Card>
+  <Card title="AI-powered" icon="sparkles">
+    Insights are extracted automatically with no manual review.
+  </Card>
+</CardGroup>
+
+<Card title="Connect Fathom" icon="plug" href="https://hearflow.io/settings/integrations">
+  Open Hearflow settings to connect your Fathom account.
+</Card>
+
+## Prerequisites
+
+- A Fathom account with meeting recordings
+- Permission to authorize third-party apps for your workspace
+
+<Note>
+  Hearflow only processes meetings that have a transcript available in Fathom. Recordings without transcripts are skipped.
+</Note>
+
+## Connecting Fathom
+
+<Steps>
+  <Step title="Open Settings">
+    Log in to Hearflow and go to [Settings](https://hearflow.io/settings).
+  </Step>
+  <Step title="Find Fathom in Integrations">
+    Scroll to the **Integrations** section and locate Fathom.
+  </Step>
+  <Step title="Click Connect">
+    Click **Connect** next to Fathom. You'll be redirected to Fathom's authorization page.
+  </Step>
+  <Step title="Authorize Hearflow">
+    Review the requested permissions and click **Allow** to grant Hearflow access to your meetings and transcripts.
+  </Step>
+  <Step title="Backfill begins">
+    After authorization you'll be redirected back to Hearflow. We start importing recent meetings in the background.
+  </Step>
+</Steps>
+
+<Info>
+  **Connection successful** — Once connected, you'll see a green "Connected" badge next to Fathom in Settings. First insights typically appear within a few hours, depending on the number of meetings.
+</Info>
+
+## How it works
+
+<Steps>
+  <Step title="Initial backfill">
+    On first connect, Hearflow imports your recent Fathom meetings, fetches each meeting's transcript and summary, and queues them for analysis.
+  </Step>
+  <Step title="Daily sync">
+    Every 24 hours, Hearflow checks Fathom for new meetings and processes any that have a completed transcript. No manual action required.
+  </Step>
+  <Step title="AI analysis">
+    Our AI analyzes each transcript to identify feature requests, pain points, bugs, pricing feedback, usability issues, workflow gaps, and blockers.
+  </Step>
+  <Step title="Insight clustering">
+    Similar insights are grouped into clusters. Each insight shows frequency and includes evidence quotes from the original meeting transcripts.
+  </Step>
+</Steps>
+
+## Data access and privacy
+
+Hearflow requests the minimum permissions needed:
+
+<Note>
+  **What we access**
+  - **Meetings** — list of meetings and their metadata (title, date, duration, participants)
+  - **Transcripts** — full transcript text for each meeting
+  - **Summaries** — Fathom-generated meeting summaries
+</Note>
+
+**What we do NOT access**
+
+- Video or audio files (we only process transcripts and summaries)
+- Live meetings or real-time data
+- Your contacts or calendar
+- Other users' accounts
+
+<Info>
+  **Security and encryption** — All data is encrypted in transit (TLS 1.3) and at rest (AES-256). OAuth tokens are stored encrypted. See our [Privacy Policy](https://hearflow.io/privacy) for complete details.
+</Info>
+
+## Managing your integration
+
+Go to [Settings → Integrations](https://hearflow.io/settings) to view your Fathom connection status, including:
+
+- Connection status (Connected/Disconnected)
+- Last sync time
+- Number of meetings processed
+
+## Disconnecting Fathom
+
+<Steps>
+  <Step title="Open Settings">
+    Navigate to [Settings](https://hearflow.io/settings).
+  </Step>
+  <Step title="Find Fathom">
+    Scroll to the **Integrations** section and locate Fathom.
+  </Step>
+  <Step title="Click Disconnect">
+    Click **Disconnect** and confirm. This revokes Hearflow's access to your Fathom account.
+  </Step>
+</Steps>
+
+<Warning>
+  **What happens when you disconnect**
+  - Hearflow stops syncing new meetings from Fathom
+  - Existing insights from previously processed meetings remain in Hearflow
+  - You can reconnect at any time to resume syncing
+  - To delete all your data, contact [support@hearflow.io](mailto:support@hearflow.io)
+</Warning>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No meetings appearing?">
+    Make sure your Fathom account has recorded meetings with transcripts. Newly recorded meetings can take a short while to become available via Fathom's API.
+  </Accordion>
+  <Accordion title="Connection expired?">
+    OAuth tokens can expire or be revoked. Click **Reconnect** in Settings to refresh the connection. If the granted permissions don't include the required scope, you'll be prompted to re-authorize.
+  </Accordion>
+  <Accordion title="Missing transcripts?">
+    Hearflow only processes meetings that have a transcript in Fathom. Meetings without a transcript are skipped.
+  </Accordion>
+</AccordionGroup>
+
+## Need help?
+
+Our support team is here to help. Contact [support@hearflow.io](mailto:support@hearflow.io).
