@@ -38,6 +38,22 @@ Each integration exposes sync controls directly on its card in Settings:
 - **Trigger manual sync** — force an immediate poll (rate-limited).
 - **Backfill window** — choose how far back to import on first connect.
 
+### Sync cadence
+
+Hearflow's polling cadence is set by your subscription plan:
+
+| Plan | Cadence | Notes |
+| --- | --- | --- |
+| Starter | Weekly | Fires once a week on your configured **sync day** at the chosen hour. |
+| Pro | Daily | Fires every day at the configured hour, with a 24-hour cooldown between runs. |
+| Enterprise | Daily | Same as Pro. |
+
+Set your preferred **sync day** (Monday–Sunday), **sync hour** (0–23), and **timezone** (any IANA timezone) from Settings. Starter workspaces only poll on the chosen day; Pro and Enterprise workspaces poll daily regardless of the configured day.
+
+<Note>
+  Sync day and hour control when ongoing polls run. They do not affect manual syncs or the initial backfill, which run immediately.
+</Note>
+
 ## AI budget
 
 Hearflow meters AI spend per workspace. Your plan sets a monthly ceiling; the Settings page shows current usage, forecast, and the per-integration breakdown.

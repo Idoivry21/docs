@@ -45,7 +45,7 @@ Existing API-token integrations continue to sync during a 30-day grace window. A
 
 **Initial backfill** — A 90-day backfill of historical tickets runs immediately after the integration is connected.
 
-**Ongoing sync** — A scheduled task polls active Zendesk integrations weekly (Sundays at 04:00 UTC) for new ticket activity.
+**Ongoing sync** — A scheduled task polls active Zendesk integrations at 04:00 UTC. Cadence depends on your plan: Starter polls once a week on your workspace's configured sync day; Pro and Enterprise poll daily. See [Workspace Settings → Sync controls](/settings#sync-controls) to choose your weekly sync day.
 
 **Filters** — Tag and group filters (`zendesk_include_tags`, `zendesk_exclude_tags`, `zendesk_include_group_ids`) are honoured by the sync task when configured.
 
