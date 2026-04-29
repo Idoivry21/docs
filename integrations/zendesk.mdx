@@ -9,8 +9,8 @@ Sync Zendesk support tickets so customer issues, requests, and themes flow into 
 ## Prerequisites
 
 - A Zendesk account on a paid plan with API access enabled
-- Permission to authorize Zendesk through OAuth, or generate an API token
-- Your Zendesk subdomain (for example, `acme` from `acme.zendesk.com`)
+- Permission to authorize Zendesk through OAuth
+- Your Zendesk subdomain (for example, `acme` from `acme.zendesk.com`). Subdomains follow Zendesk's published spec: lowercase letters, digits, and hyphens, 1–63 characters, must start and end with an alphanumeric character.
 
 ## Connect Zendesk
 
@@ -22,20 +22,22 @@ Sync Zendesk support tickets so customer issues, requests, and themes flow into 
     Provide your Zendesk subdomain. Hearflow validates it before continuing.
   </Step>
   <Step title="Authorize access">
-    Complete the OAuth consent flow, or use the API-token fallback by supplying your subdomain, agent email, and an API token.
+    Complete the OAuth consent flow to grant Hearflow per-subdomain access.
   </Step>
   <Step title="Confirm initial backfill">
     Hearflow queues a 90-day backfill of historical tickets immediately after setup.
   </Step>
 </Steps>
 
-## Authentication options
+## Authentication
 
-**OAuth 2.0 (recommended)** — Authorizes per-subdomain access with automatic token refresh.
+**OAuth 2.0** — The only supported authentication method for new connections. Hearflow authorizes per-subdomain access and refreshes tokens automatically. Credentials are encrypted at rest.
 
-**API token** — Subdomain, agent email, and an API token. Credentials are validated against `/api/v2/users/me.json` before storage.
+<Warning>
+**API token authentication is deprecated.** In line with Zendesk's August 2025 marketplace policy, third-party apps may no longer authenticate with a customer's API token. New connections must use OAuth — the API-token endpoint now returns `403 Forbidden`.
 
-Credentials are encrypted at rest in both modes.
+Existing API-token integrations continue to sync during a 30-day grace window. A deprecation banner appears in the dashboard with a Reconnect action; reconnect via OAuth before the grace window ends to avoid sync interruption.
+</Warning>
 
 ## How sync works
 
@@ -49,7 +51,7 @@ Credentials are encrypted at rest in both modes.
 
 ## Reliability
 
-- OAuth tokens refresh automatically before expiry.
+- OAuth tokens refresh automatically before expiry. Zendesk rotates the refresh token on every successful refresh; if a new refresh token is not returned, Hearflow flags the integration for re-authentication rather than reusing an invalidated token.
 - Rate-limit (429) and transient server (5xx) errors are retried with exponential backoff.
 - Invalid subdomains are surfaced before the OAuth redirect.
 - Credential failures mark the integration as errored and prompt re-authentication.
