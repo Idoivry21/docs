@@ -745,6 +745,22 @@ paths:
           schema:
             type: string
             maxLength: 200
+        - name: sort
+          in: query
+          description: >
+            Sort order for the insights list.
+
+            - `frequency` (default) — `frequency_score DESC` (weighted
+            evidence/call/account count)
+
+            - `revenue_impact` — `revenue_impact DESC NULLS LAST` (HubSpot deal
+            revenue per insight; only meaningful when HubSpot is connected)
+          schema:
+            type: string
+            enum:
+              - frequency
+              - revenue_impact
+            default: frequency
       responses:
         "200":
           description: Insights retrieved successfully
@@ -3257,6 +3273,17 @@ components:
         needs_review:
           type: boolean
           description: Whether this insight needs manual review
+        revenue_impact:
+          type: number
+          nullable: true
+          description: |
+            Per-insight aggregate of qualifying (non-closed-lost) HubSpot deal
+            revenue across the distinct accounts linked to the insight via
+            evidence. Populated by the dashboard list endpoint when a HubSpot
+            integration is connected.
+            - `null`  → no evidence matched any CRM account
+            - `0`     → matched accounts have no qualifying deals
+            - `> 0`   → real revenue impact (account-deduped)
         created_at:
           type: string
           format: date-time
@@ -3278,6 +3305,7 @@ components:
         confidence_score: 0.92
         product_area_id: abc12345-6789-0def-1234-567890abcdef
         needs_review: false
+        revenue_impact: 420000
         created_at: 2026-01-20T15:30:00Z
         updated_at: 2026-01-26T10:15:00Z
     ProductLine:
