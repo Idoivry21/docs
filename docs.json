@@ -54,19 +54,6 @@
             "pages": ["insights", "settings", "team", "billing"]
           }
         ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": ["api/overview", "api/authentication"]
-          },
-          {
-            "group": "Endpoints",
-            "openapi": "api-reference/openapi.yaml"
-          }
-        ]
       }
     ]
   },
