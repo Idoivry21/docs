@@ -894,11 +894,21 @@ paths:
                     - in_progress
                     - done
                   description: User-facing triage status (distinct from system status)
+                priority:
+                  type: string
+                  enum:
+                    - p0
+                    - p1
+                    - p2
+                  nullable: true
+                  description: Manually-assigned triage priority. `p0` is highest. Send `null`
+                    to clear the assignment.
             example:
               title: Users need dark mode for night shifts
               product_area_id: abc12345-6789-0def-1234-567890abcdef
               category: feature_request
               workflow_status: to_do
+              priority: p0
       responses:
         "200":
           description: Insight updated successfully
@@ -3091,6 +3101,14 @@ components:
         needs_review:
           type: boolean
           description: Whether this insight needs manual review
+        priority:
+          type: string
+          enum:
+            - p0
+            - p1
+            - p2
+          nullable: true
+          description: Manually-assigned triage priority. `p0` is highest. `null` when unset.
         created_at:
           type: string
           format: date-time
@@ -3112,6 +3130,7 @@ components:
         confidence_score: 0.92
         product_area_id: abc12345-6789-0def-1234-567890abcdef
         needs_review: false
+        priority: p0
         created_at: 2026-01-20T15:30:00Z
         updated_at: 2026-01-26T10:15:00Z
     ProductLine:
