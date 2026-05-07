@@ -2537,6 +2537,7 @@ components:
         - asana
         - notion
         - clickup
+        - zendesk
         - csv
         - manual_upload
       description: |
@@ -2554,6 +2555,7 @@ components:
         - `asana`: Asana task and comment provider
         - `notion`: Notion page and database provider
         - `clickup`: ClickUp task and comment provider
+        - `zendesk`: Zendesk support ticket provider
         - `csv`: CSV file upload provider
         - `manual_upload`: Manual file upload provider
     IntegrationStatus:
