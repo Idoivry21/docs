@@ -112,12 +112,18 @@ curl -X POST https://hearflow.io/api/v1/oauth/token \
 
 ### 6. Revoke
 
+Revoke an access or refresh token per [RFC 7009](https://datatracker.ietf.org/doc/html/rfc7009). The endpoint is publicly reachable — it authenticates the request with `client_id` and `client_secret` in the body, so external OAuth clients can call it without a Hearflow session cookie. Per RFC 7009 §2.2, the response is always `200` regardless of whether the supplied token was valid, to prevent token-scanning attacks.
+
 ```bash
 curl -X POST https://hearflow.io/api/v1/oauth/revoke \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "token=REFRESH_TOKEN" \
-  -d "client_id=CLIENT_ID"
+  -d "token_type_hint=refresh_token" \
+  -d "client_id=CLIENT_ID" \
+  -d "client_secret=CLIENT_SECRET"
 ```
+
+The optional `token_type_hint` accepts `access_token` or `refresh_token`. The endpoint also accepts an `application/json` body with the same fields.
 
 <Info>
   **Store tokens encrypted at rest.** Encrypt refresh tokens at rest (AES-256 or equivalent) and keep the encryption key in your secret manager. Access tokens are short-lived and do not need to be persisted for long.
